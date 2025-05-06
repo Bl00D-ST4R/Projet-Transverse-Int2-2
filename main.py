@@ -2,114 +2,137 @@
 import pygame
 import sys # Pour quitter proprement
 import game_config as cfg
-import utility_functions as util # Fonctions utilitaires (chargement, etc.)
-import ui_functions   # Pour le menu principal, écrans de lore, etc.
-import gamemodes      # Contient les boucles pour les modes de jeu (principal, tutoriel)
+import utility_functions as util
+import ui_functions
+import gamemodes
 import game_functions # Pour l'instance GameState
 
-def main():
-    # --- Initialisation de Pygame et de ses modules ---
-    pygame.init()
-    pygame.mixer.init() # Initialiser le mixer pour les sons (important!)
-    
-    # Créer la fenêtre du jeu
-    # Utilise les dimensions de cfg, qui sont déjà potentiellement scalées
-    screen = pygame.display.set_mode((cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT))
-    pygame.display.set_caption(cfg.GAME_TITLE)
-    # TODO: Définir une icône pour la fenêtre
-    # try:
-    #     icon = util.load_sprite(cfg.UI_SPRITE_PATH + "game_icon.png") # SPRITE: Votre icône de jeu
-    #     pygame.display.set_icon(icon)
-    # except Exception as e:
-    #     print(f"Erreur de chargement de l'icône: {e}")
+def main_application_loop():
+    """
+    Contient la boucle principale de l'application et la gestion des états.
+    Assume que Pygame est déjà initialisé.
+    """
+    screen = pygame.display.get_surface() # Récupère l'écran initialisé
+    if not screen:
+        print("ERREUR: Écran non initialisé avant d'entrer dans la boucle principale.")
+        return
 
     clock = pygame.time.Clock()
 
-    # --- Création de l'instance de l'état du jeu ---
-    # Cette instance sera passée aux différents modes de jeu.
-    # Elle contient toutes les variables d'état (ressources, grille, listes d'objets, etc.)
     current_game_state_instance = game_functions.GameState()
-    current_game_state_instance.screen = screen # Attribuer l'écran et l'horloge
+    current_game_state_instance.screen = screen
     current_game_state_instance.clock = clock
-    current_game_state_instance.load_ui_icons() # Charger les icônes UI une fois
+    current_game_state_instance.load_ui_icons()
 
-    # Initialiser les layouts des menus UI (si pas déjà fait ailleurs au besoin)
     ui_functions.initialize_main_menu_layout()
-    ui_functions.initialize_build_menu_layout(current_game_state_instance) # Nécessite game_state pour coûts dynamiques
+    # Passe game_state pour que initialize_build_menu_layout puisse accéder aux coûts si besoin
+    ui_functions.initialize_build_menu_layout(current_game_state_instance)
 
-    # --- Machine d'état du jeu ---
+
     application_running = True
-    current_application_state = cfg.STATE_MENU # Commencer par le menu principal
+    current_application_state = cfg.STATE_MENU
 
     while application_running:
-        # Gérer les événements globaux (comme QUITTER l'application)
-        # Les événements spécifiques à un état (ex: clic sur bouton "Jouer")
-        # sont gérés dans les fonctions de cet état.
-        
-        mouse_pos = pygame.mouse.get_pos() # Position de la souris, utile pour tous les états
+        mouse_pos = pygame.mouse.get_pos()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                application_running = False # Sortir de la boucle principale de l'application
+                application_running = False
 
-            # --- Logique de la Machine d'État ---
             if current_application_state == cfg.STATE_MENU:
                 action = ui_functions.check_main_menu_click(event, mouse_pos)
                 if action is not None:
                     if action == cfg.STATE_QUIT:
                         application_running = False
                     else:
-                        current_application_state = action # Change d'état (vers Jeu, Lore, etc.)
+                        current_application_state = action
             
             elif current_application_state == cfg.STATE_LORE:
-                # L'écran de lore pourrait se terminer par un clic ou une touche
                 if event.type == pygame.MOUSEBUTTONDOWN or \
-                   (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE):
-                    current_application_state = cfg.STATE_MENU # Retour au menu après le lore
+                   (event.type == pygame.KEYDOWN and (event.key == pygame.K_SPACE or event.key == pygame.K_ESCAPE)):
+                    current_application_state = cfg.STATE_MENU
             
-            # Les événements pour STATE_GAMEPLAY et STATE_TUTORIAL sont gérés
-            # à l'intérieur de leurs boucles respectives dans gamemodes.py
-
+            # Les événements pour GAMEPLAY et TUTORIAL sont dans leurs boucles gamemodes
 
         # --- Exécution de l'État Actuel ---
         if current_application_state == cfg.STATE_MENU:
             ui_functions.draw_main_menu(screen)
         
         elif current_application_state == cfg.STATE_LORE:
-            ui_functions.draw_lore_screen(screen) # Affiche l'écran de lore
+            ui_functions.draw_lore_screen(screen)
 
         elif current_application_state == cfg.STATE_GAMEPLAY:
-            # Lance le mode de jeu principal. Cette fonction a sa propre boucle.
-            # Quand elle se termine, on revient ici (typiquement à l'état menu).
             gamemodes.run_main_game_mode(screen, clock, current_game_state_instance)
-            current_application_state = cfg.STATE_MENU # Retour au menu après le jeu
-            # Réinitialiser/recharger les layouts UI si nécessaire après un mode de jeu
-            ui_functions.initialize_main_menu_layout() 
+            current_application_state = cfg.STATE_MENU
+            ui_functions.initialize_main_menu_layout() # Réinitialiser au cas où
             ui_functions.initialize_build_menu_layout(current_game_state_instance)
 
 
         elif current_application_state == cfg.STATE_TUTORIAL:
             gamemodes.run_tutorial_mode(screen, clock, current_game_state_instance)
-            current_application_state = cfg.STATE_MENU # Retour au menu après le tutoriel
+            current_application_state = cfg.STATE_MENU
             ui_functions.initialize_main_menu_layout()
             ui_functions.initialize_build_menu_layout(current_game_state_instance)
 
         elif current_application_state == cfg.STATE_OPTIONS:
-            # TODO: Implémenter l'écran d'options
-            # ui_functions.draw_options_screen(screen)
-            # action = ui_functions.check_options_menu_click(event, mouse_pos)
-            # if action == "back_to_menu": current_application_state = cfg.STATE_MENU
-            print("État Options (non implémenté)")
-            current_application_state = cfg.STATE_MENU # Placeholder
+            print("État Options (non implémenté)") # Placeholder
+            # TODO: ui_functions.draw_options_screen(screen)
+            # action = ui_functions.check_options_menu_click(event, mouse_pos) ...
+            current_application_state = cfg.STATE_MENU
 
-        # Mettre à jour l'affichage global (surtout pour les états simples comme Menu/Lore)
         pygame.display.flip()
-        clock.tick(cfg.FPS) # Contrôler le framerate global
+        clock.tick(cfg.FPS)
 
-    # --- Fin du Jeu ---
-    pygame.quit()
-    sys.exit()
+    return # Fin de la boucle de l'application
+
+
+def run_game():
+    """
+    Fonction principale qui initialise Pygame, lance la boucle de l'application,
+    et nettoie en quittant.
+    C'EST LE POINT D'ENTRÉE PRINCIPAL.
+    """
+    print("Initialisation de Pygame...")
+    pygame.init()  # Initialise tous les modules Pygame importés
+    
+    # Il est crucial d'initialiser le mixer APRÈS pygame.init() et AVANT de charger des sons.
+    try:
+        pygame.mixer.init()
+        print("Pygame Mixer initialisé.")
+    except pygame.error as e:
+        print(f"AVERTISSEMENT: Impossible d'initialiser Pygame Mixer: {e}. Les sons pourraient ne pas fonctionner.")
+
+    print(f"Configuration de l'affichage: {cfg.SCREEN_WIDTH}x{cfg.SCREEN_HEIGHT}")
+    screen = pygame.display.set_mode((cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT))
+    pygame.display.set_caption(cfg.GAME_TITLE)
+
+    # SPRITE: Définir une icône pour la fenêtre (optionnel mais recommandé)
+    try:
+        # Assurez-vous que le chemin et le nom du fichier sont corrects.
+        icon_path = cfg.UI_SPRITE_PATH + "game_icon_32.png" # Exemple de nom
+        # Vérifier si le fichier existe avant de tenter de le charger peut être une bonne idée.
+        # import os
+        # if os.path.exists(icon_path):
+        #   game_icon = util.load_sprite(icon_path) # load_sprite gère les erreurs
+        #   if game_icon and game_icon.get_width() > 0 : # S'assurer que le chargement n'a pas renvoyé un placeholder vide
+        #       pygame.display.set_icon(game_icon)
+        #       print("Icône du jeu définie.")
+        #   else:
+        #       print(f"AVERTISSEMENT: L'icône du jeu '{icon_path}' n'a pas pu être chargée correctement.")
+        # else:
+        #   print(f"AVERTISSEMENT: Fichier d'icône du jeu non trouvé à '{icon_path}'.")
+        pass # Placeholder pour le code de l'icône, à décommenter et adapter
+    except Exception as e_icon:
+        print(f"AVERTISSEMENT: Erreur lors de la configuration de l'icône du jeu: {e_icon}")
+
+    print("Lancement de la boucle principale de l'application...")
+    main_application_loop() # Lance la logique principale du jeu
+
+    print("Fermeture de Pygame...")
+    pygame.mixer.quit() # Important de quitter le mixer
+    pygame.quit()       # Désinitialise tous les modules Pygame
+    sys.exit()          # Termine le programme Python
 
 
 if __name__ == '__main__':
-    main()
+    run_game() # Appelle la fonction qui gère l'initialisation et la boucle principale
