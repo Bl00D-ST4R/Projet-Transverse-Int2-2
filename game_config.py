@@ -168,14 +168,14 @@ STATE_OPTIONS = 5 # Si vous ajoutez un menu d'options
 
 # --- Clés pour les Dictionnaires de Stats (utilisées dans objects.py) ---
 # Garder ces clés cohérentes aide à éviter les typos.
-STAT_HP = "hp"
-STAT_COST_MONEY = "cost_money"
-STAT_COST_IRON = "cost_iron"
-STAT_POWER = "power_consumption" # Négatif pour consommation, positif pour production
-STAT_POWER_PROD = "power_production" # Alternative plus explicite pour production
-STAT_IRON_PROD = "iron_production_pm" # Par minute
-STAT_IRON_STORAGE = "iron_storage_increase"
-STAT_ADJACENCY_BONUS = "adjacency_bonus_value" # Valeur du bonus par unité adjacente
+STAT_HP = 1000 #"hp"
+STAT_COST_MONEY = 10 #"cost_money"
+STAT_COST_IRON = 10 #"cost_iron"
+STAT_POWER = 1 #"power_consumption" # Négatif pour consommation, positif pour production
+STAT_POWER_PROD = 5 #"power_production" # Alternative plus explicite pour production
+STAT_IRON_PROD = 5 #"iron_production_pm" # Par minute
+STAT_IRON_STORAGE = 50 #"iron_storage_increase"
+STAT_ADJACENCY_BONUS = 2 #"adjacency_bonus_value" # Valeur du bonus par unité adjacente
 
 STAT_SPRITE = "sprite_default_name" # Nom du fichier sprite de base
 STAT_SPRITES = "sprite_variants_dict" # Dictionnaire de sprites contextuels {key: "name.png"}
@@ -191,14 +191,14 @@ STAT_PROJ_FLAT_SPEED = "projectile_flat_speed_pixels" # Vitesse pour tirs direct
 STAT_AOE_RADIUS = "aoe_radius_pixels"
 STAT_DAMAGE = "damage_amount"
 
-STAT_SPEED = "move_speed_pixels_sec" # Pour les ennemis
-STAT_CITY_DAMAGE = "damage_to_city"
-STAT_SCORE_VALUE = "score_points_value"
-STAT_MONEY_VALUE = "money_drop_value"
+STAT_SPEED = 10 #"move_speed_pixels_sec" # Pour les ennemis
+STAT_CITY_DAMAGE = 10 #"damage_to_city"
+STAT_SCORE_VALUE = 10 #"score_points_value"
+STAT_MONEY_VALUE = 10 #"money_drop_value"
 
-STAT_SIZE_MIN_SCALE = "size_min_scale_factor" # Pour les ennemis (facteur d'échelle)
-STAT_SIZE_MAX_SCALE = "size_max_scale_factor" # Pour les ennemis (facteur d'échelle)
-STAT_HITBOX_SCALE_FACTORS = "hitbox_scale_factors_wh" # (width_scale, height_scale) par rapport au rect du sprite
+STAT_SIZE_MIN_SCALE = 0.8 # Pour les ennemis (facteur d'échelle)
+STAT_SIZE_MAX_SCALE = 1 # Pour les ennemis (facteur d'échelle)
+STAT_HITBOX_SCALE_FACTORS = 1 # (width_scale, height_scale) par rapport au rect du sprite
 
 # Clés pour les sprites de tourelle
 STAT_TURRET_BASE_SPRITE = "base_sprite_name"
