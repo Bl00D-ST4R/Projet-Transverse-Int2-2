@@ -1,7 +1,7 @@
 # ui_functions.py
 import pygame
 import game_config as cfg
-import utility_func as util
+import utility_functions as util
 # game_functions et objects sont accédés via l'instance game_state passée en argument
 
 # --- Constantes spécifiques à l'UI (si non déjà dans cfg) ---

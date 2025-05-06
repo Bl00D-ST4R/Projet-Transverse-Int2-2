@@ -2,7 +2,7 @@
 import pygame
 import random
 import game_config as cfg
-import utility_func as util
+import utility_functions as util
 import objects # Importera les classes Building, Turret, Enemy, Projectile
 import ui_functions # Pour afficher des messages, interagir avec le menu de construction
 import wave_definitions # Pour charger les vagues prédéfinies

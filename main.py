@@ -2,7 +2,7 @@
 import pygame
 import sys # Pour quitter proprement
 import game_config as cfg
-import utility_func as util # Fonctions utilitaires (chargement, etc.)
+import utility_functions as util # Fonctions utilitaires (chargement, etc.)
 import ui_functions   # Pour le menu principal, écrans de lore, etc.
 import gamemodes      # Contient les boucles pour les modes de jeu (principal, tutoriel)
 import game_functions # Pour l'instance GameState

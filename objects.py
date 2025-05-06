@@ -3,7 +3,7 @@ import pygame
 import random
 import math
 import game_config as cfg
-import utility_func as util
+import utility_functions as util
 # game_functions est importé conditionnellement ou on passe game_state pour éviter dépendance circulaire si besoin
 
 # --- Définitions des Stats des Objets ---

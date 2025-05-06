@@ -1,7 +1,7 @@
 # gamemodes.py
 import pygame
 import game_config as cfg
-import utility_func as util
+import utility_functions as util
 import game_functions # Pour l'instance GameState et les fonctions de logique
 import ui_functions   # Pour dessiner l'UI et gérer les interactions
 # objects.py est implicitement utilisé via game_functions et GameState
