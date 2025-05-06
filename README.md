@@ -1,6 +1,7 @@
 Voici ce que je te conseille maintenant :
 
-✅ Arrête-toi immédiatement.                                                                                         
+✅ Arrête-toi immédiatement.
+
 ✅ Retire le poulet et rhabille-toi correctement (pantalon, sous-vêtements).
 
 ✅ Coopère avec le vigile. Ne fais pas d’esclandre, ne t’énerve pas, reste aussi calme que possible.
