@@ -96,6 +96,8 @@ COLOR_GREY = (128, 128, 128) # Ajout d'un gris générique
 COLOR_GREY_DARK = (50, 50, 50)
 COLOR_GREY_MEDIUM = (128, 128, 128)
 COLOR_GREY_LIGHT = (200, 200, 200)
+COLOR_MAGENTA = (255, 0, 255) #the failsafe color
+COLOR_DARK_GREY_BLUE = (40, 50, 70) 
 
 COLOR_TEXT = COLOR_GREY_LIGHT
 COLOR_TITLE_TEXT = COLOR_WHITE # Pour le titre du menu principal
