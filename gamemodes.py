@@ -1,16 +1,18 @@
 # gamemodes.py
 import pygame
+import sys # Import sys pour quitter si besoin (même si géré par main.py)
 import game_config as cfg
-import utility_functions as util # CORRIGÉ: Nom du module
-import game_functions 
-import ui_functions   
-
+import utility_functions as util
+import game_functions
+import ui_functions
+import wave_definitions # Assurez-vous que ce fichier est importé si utilisé (ex: tutorial waves)
 
 def run_main_game_mode(screen, clock, game_state_instance):
     """
     Lance et gère la boucle principale du mode de jeu standard.
+    Retourne l'état suivant du jeu (ex: cfg.STATE_MENU, cfg.STATE_QUIT).
     """
-    game_state_instance.init_new_game(screen, clock) # Réinitialise l'état pour une nouvelle partie
+    game_state_instance.init_new_game(screen, clock) 
     game_state_instance.running_game = True
     game_state_instance.game_over_flag = False
     game_state_instance.game_paused = False
@@ -18,88 +20,93 @@ def run_main_game_mode(screen, clock, game_state_instance):
     print("Lancement du Mode de Jeu Principal...")
 
     while game_state_instance.running_game:
-        delta_time = game_state_instance.clock.tick(cfg.FPS) / 1000.0 # Secondes écoulées
-
-        # --- Gestion des Événements ---
-        mouse_pos = pygame.mouse.get_pos() # Obtenir la position de la souris une fois par frame
+        delta_time = game_state_instance.clock.tick(cfg.FPS) / 1000.0 
+        mouse_pos = pygame.mouse.get_pos() 
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_state_instance.running_game = False
-                # Pourrait retourner un code pour quitter complètement l'application
-                # return cfg.STATE_QUIT 
-            
+                return cfg.STATE_QUIT # <--- AJOUT: Retourner l'état QUIT
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if game_state_instance.game_over_flag:
-                        # Si game over, Esc revient au menu principal
-                        game_state_instance.running_game = False 
+                        game_state_instance.running_game = False
+                        return cfg.STATE_MENU # Esc sur Game Over -> Menu
                     else:
                         game_state_instance.toggle_pause()
-                # TODO: Ajouter d'autres raccourcis clavier si nécessaire (ex: ouvrir menu construction)
 
-            # Passer les événements à game_functions pour la construction, etc., seulement si pas en pause
-            if not game_state_instance.game_paused and not game_state_instance.game_over_flag:
-                game_state_instance.handle_player_input(event, mouse_pos)
-            elif game_state_instance.game_paused:
-                # Gérer les clics sur le menu pause (ex: Reprendre, Quitter au menu)
+            # Gestion Input spécifique à l'état (Pause, Game Over, Jeu Actif)
+            if game_state_instance.game_paused:
                 action = ui_functions.check_pause_menu_click(event, mouse_pos)
                 if action == "resume":
                     game_state_instance.toggle_pause()
-                elif action == "quit_to_menu":
+                elif action == "restart": # Action pour recommencer
+                    print("Action 'Recommencer' sélectionnée.")
+                    game_state_instance.running_game = False # Arrête cette instance de jeu
+                    return "restart_game" # Signal spécifique pour relancer le même mode
+                elif action == cfg.STATE_MENU: # Retourne l'état défini dans cfg
                     game_state_instance.running_game = False
+                    return cfg.STATE_MENU
+                elif action == cfg.STATE_QUIT: # Retourne l'état défini dans cfg
+                    game_state_instance.running_game = False
+                    return cfg.STATE_QUIT
             elif game_state_instance.game_over_flag:
-                # Gérer les clics sur l'écran de game over (ex: Rejouer, Menu Principal)
                 action = ui_functions.check_game_over_menu_click(event, mouse_pos)
-                if action == "retry": # Si on implémente un bouton rejouer
-                    game_state_instance.init_new_game(screen, clock) # Réinitialise pour un nouvel essai
-                elif action == "quit_to_menu":
+                if action == "retry": # Action pour recommencer
+                     print("Action 'Recommencer' (Game Over) sélectionnée.")
+                     game_state_instance.running_game = False
+                     return "restart_game" # Signal spécifique pour relancer le même mode
+                elif action == cfg.STATE_MENU: # Utilise la constante pour aller au menu
                     game_state_instance.running_game = False
+                    return cfg.STATE_MENU
+                elif action == cfg.STATE_QUIT: # Utilise la constante pour quitter
+                    game_state_instance.running_game = False
+                    return cfg.STATE_QUIT
+            else: # Jeu actif (pas en pause, pas game over)
+                game_state_instance.handle_player_input(event, mouse_pos)
 
 
         # --- Logique du Jeu ---
-        # game_functions.update_game_logic s'occupe de tout si pas en pause
-        game_state_instance.update_game_logic(delta_time)
-
+        if not game_state_instance.game_paused: # Mettre à jour la logique seulement si pas en pause
+            game_state_instance.update_game_logic(delta_time)
 
         # --- Affichage ---
-        # 1. Dessiner le monde du jeu (grille, bâtiments, ennemis, projectiles)
         game_state_instance.draw_game_world()
+        game_state_instance.draw_game_ui_elements() # Gère aussi l'affichage Pause/Game Over
 
-        # 2. Dessiner l'interface utilisateur par-dessus (barres de ressources, menus)
-        game_state_instance.draw_game_ui_elements() # Gère aussi l'écran de pause et game over
-
-        pygame.display.flip() # Mettre à jour l'affichage complet
+        pygame.display.flip()
 
     print("Mode de Jeu Principal terminé.")
-    # Retourne implicitement au menu principal (géré dans main.py)
+    # Si la boucle se termine normalement (ex: running_game mis à False sans action spécifique), retourner au menu
+    return cfg.STATE_MENU
 
-
+# --- Modifier aussi run_tutorial_mode de la même manière ---
 def run_tutorial_mode(screen, clock, game_state_instance):
     """
     Lance et gère la boucle du mode tutoriel.
-    (Pour l'instant, c'est une copie du mode principal, à adapter avec des objectifs spécifiques)
+    Retourne l'état suivant du jeu.
     """
     game_state_instance.init_new_game(screen, clock)
     game_state_instance.running_game = True
-    game_state_instance.game_over_flag = False # Le tutoriel peut avoir ses propres conditions de fin
+    game_state_instance.game_over_flag = False # Le tutoriel peut utiliser ce flag pour indiquer sa fin
     game_state_instance.game_paused = False
 
-    # MODIFIABLE: Paramètres spécifiques au tutoriel
-    # game_state_instance.money = 5000 # Plus d'argent pour commencer
-    # game_state_instance.all_wave_definitions = wave_definitions.load_tutorial_waves() # Vagues plus simples
-    # game_state_instance.max_waves = len(game_state_instance.all_wave_definitions)
-    # game_state_instance.set_time_for_first_wave() # Pourrait avoir un temps de prépa différent
-
+    # --- Logique spécifique au tutoriel ---
     current_tutorial_step = 0
-    tutorial_messages = [
-        "Bienvenue! Construisez une 'Fondation' (clic gauche sur l'icône puis sur la grille).",
-        "Excellent! Maintenant, placez un 'Générateur' sur une fondation.",
-        "Placez une 'Mine de Fer' sur la rangée du bas ou sur une autre mine.",
-        "Construisez une 'Tourelle Gatling' sur une fondation pour vous défendre.",
-        "Préparez-vous, des ennemis arrivent bientôt !"
+    tutorial_objectives_met = [False] * 5 # Exemple: 5 étapes
+    # Structure des étapes (exemple simplifié)
+    tutorial_steps = [
+        {"msg": "Bienvenue! Construisez une 'Structure' (icône 1) sur la grille.", "condition": lambda gs: any(b.type == "frame" for b in gs.buildings)},
+        {"msg": "Placez un 'Générateur' (icône 2) sur une structure.", "condition": lambda gs: any(b.type == "generator" for b in gs.buildings)},
+        {"msg": "Placez une 'Mine de Fer' (icône 4) sur la rangée renforcée (plus foncée) ou sur une autre mine.", "condition": lambda gs: any(b.type == "miner" for b in gs.buildings)},
+        {"msg": "Construisez une 'Tourelle Gatling' (icône 5) sur une structure.", "condition": lambda gs: any(t.type == "gatling_turret" for t in gs.turrets)},
+        {"msg": "Parfait ! Le tutoriel est terminé. Appuyez sur Echap pour quitter.", "condition": lambda gs: False} # Condition jamais remplie, fin manuelle
     ]
-    # TODO: Afficher ces messages et vérifier les conditions pour passer à l'étape suivante.
+    
+    # Afficher le premier message
+    if tutorial_steps:
+         game_state_instance.show_tutorial_message(tutorial_steps[0]["msg"], duration=999) # Message persistant
 
     print("Lancement du Mode Tutoriel...")
 
@@ -110,62 +117,75 @@ def run_tutorial_mode(screen, clock, game_state_instance):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_state_instance.running_game = False
+                return cfg.STATE_QUIT # <--- AJOUT
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if game_state_instance.game_over_flag: # Ou fin du tutoriel
-                        game_state_instance.running_game = False
-                    else:
-                        game_state_instance.toggle_pause()
+                    # Esc quitte toujours le tutoriel vers le menu
+                    game_state_instance.running_game = False
+                    return cfg.STATE_MENU
             
-            # Gestion des inputs pour le tutoriel
-            if not game_state_instance.game_paused and not game_state_instance.game_over_flag:
-                game_state_instance.handle_player_input(event, mouse_pos)
-                # TODO: Vérifier si l'action du joueur correspond à l'objectif du tutoriel actuel
-                # if current_tutorial_step == 0 and any(b.type == "foundation" for b in game_state_instance.buildings):
-                #     current_tutorial_step += 1
-                #     game_state_instance.show_error_message(tutorial_messages[current_tutorial_step], 5)
-                # etc.
-
-            elif game_state_instance.game_paused:
+            # Gestion Input spécifique à l'état (Pause, Fin Tuto, Jeu Actif)
+            if game_state_instance.game_paused: # Le tutoriel peut-il être mis en pause ? Oui.
                 action = ui_functions.check_pause_menu_click(event, mouse_pos)
-                if action == "resume": game_state_instance.toggle_pause()
-                elif action == "quit_to_menu": game_state_instance.running_game = False
-            elif game_state_instance.game_over_flag: # Fin du tutoriel (réussi ou échoué)
-                 action = ui_functions.check_game_over_menu_click(event, mouse_pos) # Utiliser un écran de fin de tuto
-                 if action == "quit_to_menu": game_state_instance.running_game = False
+                if action == "resume":
+                    game_state_instance.toggle_pause()
+                elif action == "restart": # Recommencer le tutoriel
+                     game_state_instance.running_game = False
+                     return "restart_tutorial" # Signal spécifique
+                elif action == cfg.STATE_MENU:
+                    game_state_instance.running_game = False
+                    return cfg.STATE_MENU
+                elif action == cfg.STATE_QUIT:
+                    game_state_instance.running_game = False
+                    return cfg.STATE_QUIT
+            elif game_state_instance.game_over_flag: # Fin du tutoriel (utilisation du flag game_over)
+                # Utiliser un écran de fin de tutoriel (peut être simple texte ou reuse game over)
+                 action = ui_functions.check_game_over_menu_click(event, mouse_pos) # Ou une fonction dédiée check_tutorial_end_click
+                 if action == cfg.STATE_MENU:
+                     game_state_instance.running_game = False
+                     return cfg.STATE_MENU
+                 elif action == cfg.STATE_QUIT:
+                     game_state_instance.running_game = False
+                     return cfg.STATE_QUIT
+            else: # Tutoriel actif
+                game_state_instance.handle_player_input(event, mouse_pos)
+
+                # Vérifier si l'objectif de l'étape actuelle est atteint
+                if current_tutorial_step < len(tutorial_steps):
+                    condition_func = tutorial_steps[current_tutorial_step].get("condition")
+                    if condition_func and condition_func(game_state_instance):
+                         print(f"Tutoriel: Étape {current_tutorial_step} terminée.")
+                         current_tutorial_step += 1
+                         if current_tutorial_step < len(tutorial_steps):
+                             game_state_instance.show_tutorial_message(tutorial_steps[current_tutorial_step]["msg"], duration=999)
+                         else:
+                             # Dernière étape atteinte
+                             game_state_instance.show_tutorial_message("Tutoriel terminé! Appuyez sur Echap.", duration=999)
+                             # On pourrait utiliser game_over_flag ici pour afficher l'écran de fin
+                             # game_state_instance.game_over_flag = True
 
 
-        game_state_instance.update_game_logic(delta_time)
-        
-        # TODO: Vérifier les conditions de fin du tutoriel
-        # if current_tutorial_step >= len(tutorial_messages) and not game_state_instance.wave_in_progress and not game_state_instance.enemies:
-        #     game_state_instance.show_error_message("Tutoriel terminé avec succès!", 10)
-        #     game_state_instance.game_over_flag = True # Marquer comme terminé
+        # --- Logique du Jeu (limitée pour le tuto si besoin) ---
+        if not game_state_instance.game_paused:
+            # Pas de vagues dans ce tutoriel simple, mais on update quand même les ressources/timers
+            game_state_instance.update_timers_and_waves(delta_time) # Gère les timers des messages
+            game_state_instance.update_resources_per_tick(delta_time)
+            # Mettre à jour les objets placés (tourelles etc.) même s'il n'y a pas d'ennemis
+            is_globally_powered = game_state_instance.electricity_produced >= game_state_instance.electricity_consumed
+            for turret in game_state_instance.turrets:
+                 turret.update(delta_time, [], is_globally_powered, game_state_instance) # Pas d'ennemis à viser
+            # Pas besoin d'update_game_logic complet qui gère vagues/ennemis/collisions ici
 
+        # --- Affichage ---
         game_state_instance.draw_game_world()
-        game_state_instance.draw_game_ui_elements()
-        
-        # Afficher le message du tutoriel actuel
-        if not game_state_instance.game_over_flag and current_tutorial_step < len(tutorial_messages):
-             # S'assurer que ce message ne se superpose pas trop avec show_error_message
-            if game_state_instance.error_message_timer <=0:
-                ui_functions.draw_tutorial_message(game_state_instance.screen, tutorial_messages[current_tutorial_step])
+        game_state_instance.draw_game_ui_elements() # Affiche top bar, build menu, et messages tuto/erreur
 
+        # Gérer l'affichage de fin de tutoriel (si on utilise game_over_flag)
+        # if game_state_instance.game_over_flag:
+        #     ui_functions.draw_game_over_screen(screen, "Tutoriel Complété") # Passer un message au lieu du score
 
         pygame.display.flip()
 
-    print("Mode Tutoriel terminé.")
-
-
-# --- Fonctions pour le menu principal et l'animation de lore (si déplacées ici) ---
-# (Pour l'instant, on suppose qu'elles sont dans main.py ou ui_functions.py)
-
-# def run_lore_animation(screen, clock):
-#     print("Affichage de l'animation/lore...")
-#     # ... logique de l'animation ...
-#     # Retourne au menu principal une fois terminé ou skippé
-
-# def run_main_menu(screen, clock):
-#     print("Affichage du Menu Principal...")
-#     # ... logique du menu avec boutons ...
-#     # Retourne un code d'état (STATE_GAMEPLAY, STATE_TUTORIAL, STATE_LORE, STATE_QUIT)
+     print("Mode Tutoriel terminé.")
+     return cfg.STATE_MENU # Retourner au menu par défaut
