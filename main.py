@@ -1,11 +1,11 @@
 # main.py
 import pygame
-import sys # Pour quitter proprement
+import sys 
 import game_config as cfg
-import utility_functions as util
+import utility_functions as util # CORRIGÉ: Nom du module
 import ui_functions
 import gamemodes
-import game_functions # Pour l'instance GameState
+import game_functions 
 
 def main_application_loop():
     """
