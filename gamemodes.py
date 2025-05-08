@@ -1,10 +1,10 @@
 # gamemodes.py
 import pygame
 import game_config as cfg
-import utility_functions as util
-import game_functions # Pour l'instance GameState et les fonctions de logique
-import ui_functions   # Pour dessiner l'UI et gérer les interactions
-# objects.py est implicitement utilisé via game_functions et GameState
+import utility_functions as util # CORRIGÉ: Nom du module
+import game_functions 
+import ui_functions   
+
 
 def run_main_game_mode(screen, clock, game_state_instance):
     """
