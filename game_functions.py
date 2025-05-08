@@ -72,6 +72,26 @@ class GameState:
         self.max_waves = len(self.all_wave_definitions)
 
 
+    def get_next_expansion_cost(self, direction):
+        """Calcule le coût de la prochaine expansion sans l'effectuer."""
+        # Logique de coût dupliquée de try_expand_build_area (ou centraliser cette logique)
+        # MODIFIABLE: Coûts d'expansion (doivent être cohérents avec try_expand_build_area)
+        cost_up_base = 500 
+        cost_side_base = 1000
+        
+        cost = 0
+        if direction == "up":
+            if self.current_expansion_up_tiles < cfg.GRID_MAX_EXPANSION_UP_TILES:
+                cost = cost_up_base * (self.current_expansion_up_tiles + 1)
+            else:
+                return "Max" # Ou un indicateur que c'est max
+        elif direction == "side":
+            if self.current_expansion_sideways_steps < cfg.GRID_MAX_EXPANSION_SIDEWAYS_STEPS:
+                cost = cost_side_base * (self.current_expansion_sideways_steps + 1)
+            else:
+                return "Max"
+        return cost
+
     def init_new_game(self, screen, clock):
         """Réinitialise l'état pour une nouvelle partie."""
         self.__init__() # Appelle le constructeur pour tout remettre à zéro
