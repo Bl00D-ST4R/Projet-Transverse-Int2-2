@@ -1,4 +1,4 @@
-# utility_func.py
+# utility_functions.py
 import pygame
 import os
 import game_config as cfg # Contient les valeurs scalées et les chemins
@@ -8,39 +8,89 @@ sprite_cache = {}
 font_cache = {}
 sound_cache = {} # Ajout pour les sons
 
+# --- Constante pour le Sprite de Secours ---
+# MODIFIABLE: Chemin vers le sprite à utiliser si un autre n'est pas trouvé.
+# Assurez-vous que ce fichier existe !
+FAILSAFE_SPRITE_PATH = os.path.join(cfg.TURRET_SPRITE_PATH, "mortar_sketch.png") 
+# Alternative: un sprite plus générique ou un placeholder dédié aux erreurs
+# FAILSAFE_SPRITE_PATH = os.path.join(cfg.UI_SPRITE_PATH, "error_placeholder.png") 
+
 # --- Chargement et Gestion des Sprites ---
 def load_sprite(path, use_alpha=True):
     """
     Charge un sprite depuis le chemin donné.
     Utilise un cache pour éviter de recharger les mêmes images.
-    La mise à l'échelle est gérée au niveau de l'objet ou du dessin.
+    Si le sprite n'est pas trouvé, tente de charger le sprite de secours (FAILSAFE_SPRITE_PATH).
     """
-    if path in sprite_cache:
-        return sprite_cache[path]
+    # Clé pour le cache basée sur le chemin demandé
+    cache_key = path
+    if cache_key in sprite_cache:
+        return sprite_cache[cache_key]
     
-    # Construit le chemin complet. `path` est supposé être relatif au dossier principal du jeu
-    # ou un chemin déjà complet (ex: cfg.BUILDING_SPRITE_PATH + "name.png")
     full_path = os.path.join(path) 
+    image = None # Initialiser à None
+
     try:
         image = pygame.image.load(full_path)
-        if use_alpha:
-            image = image.convert_alpha()
-        else:
-            image = image.convert()
-        
-        sprite_cache[path] = image
-        return image
+        print(f"INFO: Sprite chargé avec succès: '{full_path}'") # Message de succès
     except pygame.error as e:
-        print(f"ERREUR: Impossible de charger le sprite '{full_path}': {e}")
-        # SPRITE: Créer un sprite placeholder en cas d'erreur
-        # Utilise TILE_SIZE de cfg, qui est déjà scalé
+        print(f"AVERTISSEMENT: Impossible de charger le sprite '{full_path}': {e}. Tentative avec le sprite de secours.")
+        # Essayer de charger le sprite de secours
+        try:
+            # Utiliser une clé de cache différente pour le failsafe pour ne pas écraser
+            # le cache de la requête originale si le failsafe est demandé directement plus tard.
+            if FAILSAFE_SPRITE_PATH in sprite_cache:
+                image = sprite_cache[FAILSAFE_SPRITE_PATH]
+            else:
+                failsafe_image_loaded = pygame.image.load(FAILSAFE_SPRITE_PATH)
+                # Convertir le failsafe immédiatement s'il est chargé pour la première fois
+                if use_alpha:
+                    image = failsafe_image_loaded.convert_alpha()
+                else:
+                    image = failsafe_image_loaded.convert()
+                sprite_cache[FAILSAFE_SPRITE_PATH] = image # Mettre en cache le failsafe traité
+            print(f"INFO: Sprite de secours '{FAILSAFE_SPRITE_PATH}' chargé pour remplacer '{path}'.")
+        except pygame.error as e_failsafe:
+            print(f"ERREUR FATALE: Impossible de charger le sprite '{full_path}' ET le sprite de secours '{FAILSAFE_SPRITE_PATH}': {e_failsafe}")
+            # Si même le failsafe échoue, on crée un placeholder simple pour éviter un crash total.
+            placeholder_size = (cfg.TILE_SIZE, cfg.TILE_SIZE)
+            placeholder = pygame.Surface(placeholder_size, pygame.SRCALPHA if use_alpha else 0) # Respecter use_alpha
+            placeholder.fill(cfg.COLOR_MAGENTA) # Magenta vif pour indiquer une double erreur
+            pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, 0), (placeholder_size[0]-1, placeholder_size[1]-1), 3)
+            pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, placeholder_size[1]-1), (placeholder_size[0]-1, 0), 3)
+            
+            # Mettre en cache le placeholder pour le chemin original
+            sprite_cache[cache_key] = placeholder 
+            # Si le failsafe lui-même a échoué, son entrée de cache (si elle existait) reste,
+            # ou si FAILSAFE_SPRITE_PATH n'était pas dans le cache, il ne le sera pas avec le placeholder.
+            # C'est ok, car le placeholder est retourné pour la requête originale.
+            return placeholder
+
+    # Si l'image (originale ou failsafe) a été chargée avec succès et n'est pas encore convertie (cas original)
+    if image:
+        # Si 'image' est le failsafe déjà converti, cette conversion est redondante mais inoffensive.
+        # Pour éviter la double conversion, on pourrait avoir un flag ou vérifier si c'est l'instance du cache.
+        # Simplification : on assume que si `image` vient du premier try, il n'est pas converti.
+        # Si `image` vient du cache de `FAILSAFE_SPRITE_PATH`, il est déjà converti.
+        # On peut vérifier si `image` est déjà dans `sprite_cache.values()` pour voir s'il vient du cache.
+        # Mais une reconversion alpha sur une image déjà alpha est généralement ok.
+        if path not in sprite_cache or sprite_cache[path] is not image: # Eviter reconversion si c'est le failsafe du cache
+            if use_alpha:
+                image = image.convert_alpha()
+            else:
+                image = image.convert()
+        
+        sprite_cache[cache_key] = image
+        return image
+    else:
+        # Ce bloc ne devrait théoriquement pas être atteint si le placeholder est créé dans le `except e_failsafe`.
+        print(f"ERREUR INATTENDUE: Aucune image n'a pu être assignée pour '{full_path}'.")
+        # Création d'un placeholder ultime si on arrive ici par un chemin non prévu.
         placeholder_size = (cfg.TILE_SIZE, cfg.TILE_SIZE)
-        placeholder = pygame.Surface(placeholder_size)
-        placeholder.fill(cfg.COLOR_RED) # Couleur vive pour indiquer une erreur
-        pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, 0), (placeholder_size[0]-1, placeholder_size[1]-1), 2)
-        pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, placeholder_size[1]-1), (placeholder_size[0]-1, 0), 2)
-        sprite_cache[path] = placeholder # Mettre en cache le placeholder pour ce chemin
-        return placeholder
+        ultimate_placeholder = pygame.Surface(placeholder_size, pygame.SRCALPHA if use_alpha else 0)
+        ultimate_placeholder.fill(cfg.COLOR_BLACK) # Noir pour indiquer une erreur très grave
+        sprite_cache[cache_key] = ultimate_placeholder
+        return ultimate_placeholder
 
 def scale_sprite_to_tile(original_sprite):
     """Met à l'échelle un sprite pour qu'il corresponde à cfg.TILE_SIZE."""
@@ -77,7 +127,12 @@ def get_font(size, font_name=cfg.FONT_NAME_DEFAULT):
         except Exception as e:
             print(f"AVERTISSEMENT: Impossible de charger la police '{font_name}' en taille {size}. Utilisation d'Arial. Erreur: {e}")
             # Fallback vers une police système courante si l'autre échoue
-            font_cache[key] = pygame.font.SysFont("arial", size)
+            try:
+                font_cache[key] = pygame.font.SysFont("arial", size)
+            except Exception as e_sysfont:
+                print(f"ERREUR FATALE: Impossible de charger la police système Arial. Erreur: {e_sysfont}")
+                # Fallback ultime si SysFont échoue aussi (très rare)
+                font_cache[key] = pygame.font.Font(None, size) # Police Pygame par défaut
     return font_cache[key]
 
 def render_text_surface(text, size, color, font_name=cfg.FONT_NAME_DEFAULT, antialias=True, background_color=None):
@@ -97,20 +152,18 @@ def load_sound(path):
     if path in sound_cache:
         return sound_cache[path]
     
-    full_path = os.path.join(path) # Assure la compatibilité des chemins
+    full_path = os.path.join(path) 
     try:
-        # pygame.mixer.Sound peut échouer si le mixer n'est pas initialisé
-        # L'initialisation du mixer se fait généralement une fois au début du jeu (main.py)
         sound = pygame.mixer.Sound(full_path)
         sound_cache[path] = sound
         return sound
     except pygame.error as e:
         print(f"ERREUR: Impossible de charger le son '{full_path}': {e}")
-        return None # Retourne None si le chargement échoue
+        return None
 
 def play_sound(sound_object, loops=0, volume=1.0):
     """Joue un objet Sound chargé, si disponible."""
-    if sound_object and pygame.mixer.get_init(): # Vérifie si le mixer est initialisé
+    if sound_object and pygame.mixer.get_init(): 
         sound_object.set_volume(volume)
         sound_object.play(loops)
     elif not pygame.mixer.get_init():
@@ -134,13 +187,11 @@ def convert_pixels_to_grid(pixel_pos_tuple, grid_origin_xy_pixels):
     """
     px, py = pixel_pos_tuple
     
-    # Coordonnées relatives à l'origine de la grille
     relative_px = px - grid_origin_xy_pixels[0]
     relative_py = py - grid_origin_xy_pixels[1]
     
-    # Si le clic est à gauche ou au-dessus de l'origine de la grille
     if relative_px < 0 or relative_py < 0:
-        return -1, -1 # Indique une position invalide ou hors grille
+        return -1, -1 
 
     grid_col = relative_px // cfg.TILE_SIZE
     grid_row = relative_py // cfg.TILE_SIZE
@@ -150,7 +201,7 @@ def convert_pixels_to_grid(pixel_pos_tuple, grid_origin_xy_pixels):
 # --- Utilitaires de Dessin ---
 def draw_debug_rect(surface, rect, color=cfg.COLOR_RED, width=1):
     """Dessine le contour d'un rectangle pour le débogage, si le rect est valide."""
-    if rect: # S'assurer que rect n'est pas None
+    if rect: 
         pygame.draw.rect(surface, color, rect, width)
 
 def draw_debug_text(surface, text, position_xy, size=cfg.FONT_SIZE_SMALL, color=cfg.COLOR_WHITE):
@@ -170,57 +221,56 @@ def draw_debug_text(surface, text, position_xy, size=cfg.FONT_SIZE_SMALL, color=
 #     return ((pos1_xy[0] - pos2_xy[0])**2 + (pos1_xy[1] - pos2_xy[1])**2)**0.5
 
 if __name__ == '__main__':
-    # Petit test si on exécute ce fichier directement
     pygame.init()
-    pygame.mixer.init() # Important pour tester les sons
+    pygame.mixer.init() 
     screen = pygame.display.set_mode((cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT))
     pygame.display.set_caption("Test Utility Functions")
 
     print(f"TILE_SIZE configuré: {cfg.TILE_SIZE}")
-    print(f"GRID_OFFSET_X: {cfg.GRID_OFFSET_X}, GRID_OFFSET_Y: {cfg.GRID_OFFSET_Y}")
+    # GRID_OFFSET_Y est dynamique, donc pour le test on peut utiliser une valeur fixe ou 0
+    test_grid_offset_y = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT - (cfg.GRID_INITIAL_HEIGHT_TILES * cfg.TILE_SIZE) - cfg.GRID_BOTTOM_PADDING
+    print(f"GRID_OFFSET_X: {cfg.GRID_OFFSET_X}, Test GRID_OFFSET_Y: {test_grid_offset_y}")
 
-    # Test de chargement de sprite (créez un dummy.png dans assets/sprites/ui/)
-    # SPRITE: Assurez-vous d'avoir un fichier assets/sprites/ui/dummy.png pour ce test
-    # ou commentez cette partie.
+
     try:
-        dummy_sprite_path = os.path.join(cfg.UI_SPRITE_PATH, "dummy.png")
-        if not os.path.exists(dummy_sprite_path):
-             # Créer un dummy.png si absent pour le test
-            surf = pygame.Surface((32,32)); surf.fill((0,255,0))
-            pygame.image.save(surf, dummy_sprite_path)
-            print(f"Création d'un fichier {dummy_sprite_path} pour le test.")
+        # Utiliser un chemin qui existe ou le failsafe pour le test
+        test_sprite_path = os.path.join(cfg.BUILDING_SPRITE_PATH, "frame.png") 
+        if not os.path.exists(test_sprite_path):
+            test_sprite_path = FAILSAFE_SPRITE_PATH # Tenter avec le failsafe si frame.png n'existe pas
+        
+        print(f"Tentative de chargement du sprite de test : {test_sprite_path}")
+        test_sprite_orig = load_sprite(test_sprite_path) # Doit utiliser la nouvelle logique
 
-        test_sprite_orig = load_sprite(dummy_sprite_path)
         test_sprite_scaled_tile = scale_sprite_to_tile(test_sprite_orig)
         test_sprite_custom_scaled = scale_sprite_to_size(test_sprite_orig, cfg.scale_value(50), cfg.scale_value(70))
-        print(f"Sprite original chargé: {test_sprite_orig.get_size() if test_sprite_orig else 'Erreur'}")
-        print(f"Sprite scalé TILE: {test_sprite_scaled_tile.get_size() if test_sprite_scaled_tile else 'Erreur'}")
-        print(f"Sprite scalé custom: {test_sprite_custom_scaled.get_size() if test_sprite_custom_scaled else 'Erreur'}")
+        
+        print(f"Sprite original chargé (peut être le failsafe): {test_sprite_orig.get_size() if test_sprite_orig else 'Erreur/Placeholder'}")
+        if test_sprite_orig and test_sprite_orig.get_width() > 0 and test_sprite_orig.get_height() > 0: # S'assurer que c'est une surface valide
+            print(f"Sprite scalé TILE: {test_sprite_scaled_tile.get_size() if test_sprite_scaled_tile else 'Erreur'}")
+            print(f"Sprite scalé custom: {test_sprite_custom_scaled.get_size() if test_sprite_custom_scaled else 'Erreur'}")
+        else:
+            print("Le sprite de test (ou son failsafe/placeholder) n'a pas pu être chargé correctement.")
+
     except Exception as e_test:
         print(f"Erreur dans le test de sprite: {e_test}")
 
 
-    # Test de police
     test_text_surf = render_text_surface("Test Utility", cfg.FONT_SIZE_MEDIUM, cfg.COLOR_TEXT)
     print(f"Surface de texte créée: {test_text_surf.get_size() if test_text_surf else 'Erreur'}")
 
-    # Test de son (créez un dummy.wav dans assets/sounds/)
-    # SOUND: Assurez-vous d'avoir un fichier assets/sounds/dummy.wav pour ce test
-    # ou commentez cette partie.
     try:
-        dummy_sound_path = os.path.join(cfg.ASSET_PATH, "sounds", "dummy.wav")
-        # Si vous n'avez pas de .wav, pygame peut ne pas le lire.
-        # Un simple clic sonore suffirait.
-        # if not os.path.exists(dummy_sound_path):
-        #     print(f"Créez un fichier {dummy_sound_path} (ex: un court .wav) pour tester le son.")
-        
-        test_sound = load_sound(dummy_sound_path)
-        if test_sound:
-            print(f"Son chargé. Essayez de le jouer (vous devriez l'entendre).")
-            play_sound(test_sound)
-        else:
-            print("Chargement du son de test échoué (ou fichier non trouvé).")
-
+        # Pour le son, assurez-vous d'avoir un fichier .wav ou .ogg valide
+        # dummy_sound_path = os.path.join(cfg.SOUND_PATH, "your_test_sound.wav") 
+        # if os.path.exists(dummy_sound_path):
+        #     test_sound = load_sound(dummy_sound_path)
+        #     if test_sound:
+        #         print(f"Son chargé. Essayez de le jouer.")
+        #         play_sound(test_sound)
+        #     else:
+        #         print("Chargement du son de test échoué.")
+        # else:
+        #     print(f"Fichier son de test non trouvé à {dummy_sound_path}.")
+        print("Test de son désactivé (décommentez et fournissez un fichier si besoin).")
     except Exception as e_sound_test:
         print(f"Erreur dans le test de son: {e_sound_test}")
 
@@ -231,25 +281,24 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                grid_origin = (cfg.GRID_OFFSET_X, cfg.GRID_OFFSET_Y) # Utiliser le GRID_OFFSET_Y calculé dynamiquement
-                grid_r, grid_c = convert_pixels_to_grid(event.pos, grid_origin)
-                pixel_x, pixel_y = convert_grid_to_pixels((grid_r, grid_c), grid_origin)
+                grid_origin_runtime = (cfg.GRID_OFFSET_X, test_grid_offset_y) 
+                grid_r, grid_c = convert_pixels_to_grid(event.pos, grid_origin_runtime)
+                pixel_x, pixel_y = convert_grid_to_pixels((grid_r, grid_c), grid_origin_runtime)
                 print(f"Clic à {event.pos} -> Grille ({grid_r}, {grid_c}) -> Pixel d'origine de case ({pixel_x}, {pixel_y})")
 
 
         screen.fill(cfg.COLOR_BLACK)
         if test_text_surf:
-            screen.blit(test_text_surf, (50, 50))
-        if test_sprite_scaled_tile:
-            screen.blit(test_sprite_scaled_tile, (100,100))
+            screen.blit(test_text_surf, (cfg.scale_value(50), cfg.scale_value(50)))
+        if test_sprite_scaled_tile: # Devrait être le sprite chargé ou son failsafe/placeholder
+            screen.blit(test_sprite_scaled_tile, (cfg.scale_value(100),cfg.scale_value(100)))
         
-        # Dessiner une grille de débogage pour tester les conversions
-        grid_origin_test = (cfg.GRID_OFFSET_X, cfg.GRID_OFFSET_Y)
-        for r in range(cfg.INITIAL_GRID_HEIGHT_TILES):
-            for c in range(cfg.INITIAL_GRID_WIDTH_TILES):
-                px, py = convert_grid_to_pixels((r,c), grid_origin_test)
+        grid_origin_test_draw = (cfg.GRID_OFFSET_X, test_grid_offset_y)
+        for r in range(cfg.GRID_INITIAL_HEIGHT_TILES):
+            for c in range(cfg.GRID_INITIAL_WIDTH_TILES):
+                px, py = convert_grid_to_pixels((r,c), grid_origin_test_draw)
                 rect = pygame.Rect(px, py, cfg.TILE_SIZE, cfg.TILE_SIZE)
-                draw_debug_rect(screen, rect, cfg.COLOR_GREY)
+                draw_debug_rect(screen, rect, cfg.COLOR_GREY_MEDIUM)
 
         pygame.display.flip()
         pygame.time.Clock().tick(30)
