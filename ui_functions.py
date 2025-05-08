@@ -2,6 +2,7 @@
 import pygame
 import game_config as cfg
 import utility_functions as util
+import objects # Nécessaire pour objects.get_item_stats
 # game_functions et objects sont accédés via l'instance game_state passée en argument
 
 # --- Constantes spécifiques à l'UI (si non déjà dans cfg) ---
@@ -85,21 +86,18 @@ def draw_top_bar_ui(screen, game_state):
     else:
         if game_state.current_wave_number == 0 :
              wave_text_str = f"Préparation..."
-        elif game_state.current_wave_number >= game_state.max_waves and game_state.max_waves > 0 : # si max_waves est 0, mode infini?
+        elif game_state.current_wave_number >= game_state.max_waves and game_state.max_waves > 0 :
              wave_text_str = "Toutes vagues terminées!"
         else:
              wave_text_str = f"Prochaine vague dans {int(game_state.time_to_next_wave_seconds // 60):02}:{int(game_state.time_to_next_wave_seconds % 60):02}"
     
     wave_text_surf = util.render_text_surface(wave_text_str, cfg.FONT_SIZE_MEDIUM, cfg.COLOR_TEXT)
     wave_text_x = city_hp_start_x - city_label_text.get_width() - cfg.scale_value(5) - wave_text_surf.get_width() - padding_x
-    # Ou centrer le texte de vague:
-    # wave_text_x = (cfg.SCREEN_WIDTH - wave_text_surf.get_width()) // 2
     screen.blit(wave_text_surf, (wave_text_x, padding_y_center - wave_text_surf.get_height() // 2))
 
 
 def draw_base_grid(screen, game_state):
     """Dessine la grille de construction."""
-    # Le game_state.buildable_area_rect_pixels est déjà calculé avec le bon offset Y
     grid_origin_x = game_state.buildable_area_rect_pixels.x
     grid_origin_y = game_state.buildable_area_rect_pixels.y
 
@@ -111,30 +109,57 @@ def draw_base_grid(screen, game_state):
                 cfg.TILE_SIZE, cfg.TILE_SIZE
             )
             
-            # TODO: Déterminer si la case est une "fondation renforcée" pour une couleur différente
-            # (Ex: si r est la dernière ligne de la grille initiale)
-            # La "dernière ligne" change si on étend vers le haut, donc il faut une logique.
-            # Supposons que la "reinforced_foundation_row_index" est stockée dans game_state
-            # ou calculée : cfg.INITIAL_GRID_HEIGHT_TILES - 1 + game_state.current_expansion_up_tiles
-            # (si 0 est en haut et qu'on ajoute des rangées en haut).
-            # Si 0 est en haut et qu'on ajoute des rangées EN BAS de la structure de données pour l'expansion "vers le haut":
-            initial_bottom_row_logical_idx = cfg.INITIAL_GRID_HEIGHT_TILES - 1
-            is_reinforced_spot = (r == initial_bottom_row_logical_idx and c < cfg.INITIAL_GRID_WIDTH_TILES)
+            initial_bottom_row_logical_idx = cfg.INITIAL_GRID_HEIGHT_TILES - 1 # Si la grille 0,0 est en haut à gauche
+            # Et que l'expansion vers le "haut" signifie insérer des lignes au début de la structure de données
+            # ET que grid_height_tiles a été mis à jour.
+            # La rangée "renforcée" serait alors à `initial_bottom_row_logical_idx + game_state.num_expansions_up`
+            # (Si l'index 0 est toujours la rangée la plus haute affichée)
+            # Ou plus simplement, si la grille est toujours rendue de 0 à N,
+            # la ligne renforcée est celle qui correspondait à la dernière ligne initiale.
+            # Sa position logique (index de ligne) dans le game_grid dépend de comment game_grid est géré.
+            # Assumons que 'r' ici est l'index de la rangée DANS LA GRILLE ACTUELLE.
+            # On a besoin de savoir quelle est la rangée "logique" correspondant à la dernière rangée
+            # de la zone de construction d'origine.
+            # Par exemple, si on a étendu 2 fois vers le haut, et que la rangée renforcée est la 3ème (index 2)
+            # à partir du "bas" de la structure originale.
+            # C'est plus simple si on a un `game_state.reinforced_row_index_visual` qui est mis à jour.
+            # Pour cet exemple, on garde la logique précédente, qui est correcte si 0,0 est toujours le coin sup gauche
+            # de la zone construisible initiale et qu'on ajoute des rangées en "haut" de la structure de données
+            # de la grille, ce qui décale les index.
+            # Ou si `game_state.buildable_area_rect_pixels.y` change, et `r` est relatif à ce nouveau `y`.
+
+            # Simplifions : la rangée renforcée est la dernière rangée de la zone de construction initiale.
+            # Sa position visuelle dépendra de l'expansion vers le haut.
+            # Si `game_state.buildable_area_rect_pixels.y` est l'origine de la grille affichée
+            # et que la rangée renforcée est toujours à `cfg.INITIAL_GRID_HEIGHT_TILES - 1` par rapport
+            # au "bas" logique de la zone initiale.
+            # Pour la coloration, on veut savoir si la tuile (r,c) est une "ancienne" fondation.
+            # C'est plus complexe qu'il n'y paraît sans savoir exactement comment l'expansion est gérée.
+            # Gardons la version la plus simple pour l'instant:
             
+            # is_reinforced_spot = (r == (cfg.INITIAL_GRID_HEIGHT_TILES - 1) + game_state.expansions_up_count) 
+            # (si 'r' est indexé depuis le haut de la grille actuellement visible, et que 0 est la première ligne)
+            # La logique initiale était:
+            # initial_bottom_row_logical_idx = cfg.INITIAL_GRID_HEIGHT_TILES - 1
+            # is_reinforced_spot = (r == initial_bottom_row_logical_idx and c < cfg.INITIAL_GRID_WIDTH_TILES)
+            # Cela ne fonctionne que si la grille ne s'étend pas vers le haut.
+            # Solution plus robuste: stocker les coordonnées des tuiles renforcées, ou une ligne d'index.
+            # Ou, si game_state a `reinforced_foundation_row_index_in_current_grid`:
+            is_reinforced_spot = (hasattr(game_state, 'reinforced_foundation_row_index_in_current_grid') and \
+                                 r == game_state.reinforced_foundation_row_index_in_current_grid and \
+                                 c < cfg.INITIAL_GRID_WIDTH_TILES) # Limiter aux colonnes initiales aussi
+
             tile_color = cfg.COLOR_GRID_REINFORCED if is_reinforced_spot else cfg.COLOR_GRID_DEFAULT
             pygame.draw.rect(screen, tile_color, tile_rect)
             pygame.draw.rect(screen, cfg.COLOR_GRID_BORDER, tile_rect, 1)
 
 
-build_menu_layout = [] # Sera rempli avec les infos des boutons (rect, id, tooltip, icon_surf)
+build_menu_layout = []
 
 def initialize_build_menu_layout(game_state):
-    """Prépare la disposition des boutons du menu de construction."""
     global build_menu_layout
-    build_menu_layout = [] # Vider pour recalcul si la résolution change en cours de jeu (peu probable ici)
+    build_menu_layout = []
 
-    # TODO: Définir les items du menu. Charger les sprites d'icônes ici.
-    # SPRITE: Assurez-vous d'avoir les icônes pour chaque item.
     menu_item_definitions = [
         {"id": "foundation", "tooltip": "Fondation", "icon_name": "icon_foundation.png"},
         {"id": "generator", "tooltip": "Générateur", "icon_name": "icon_generator.png"},
@@ -152,9 +177,14 @@ def initialize_build_menu_layout(game_state):
     button_y = menu_rect_y + (cfg.UI_BUILD_MENU_HEIGHT - button_size_h) // 2
 
     for item_def in menu_item_definitions:
-        icon_path = cfg.UI_SPRITE_PATH + item_def["icon_name"] # Ou cfg.BUILDING_SPRITE_PATH etc.
+        icon_path = cfg.UI_SPRITE_PATH + item_def["icon_name"]
         icon_surf_orig = util.load_sprite(icon_path)
-        icon_surf_scaled = util.scale_sprite_to_size(icon_surf_orig, button_size_w - cfg.scale_value(10), button_size_h - cfg.scale_value(10)) # Laisse un peu de marge
+        # S'assurer que l'icône n'est pas None avant de la scaler
+        if icon_surf_orig:
+            icon_surf_scaled = util.scale_sprite_to_size(icon_surf_orig, button_size_w - cfg.scale_value(10), button_size_h - cfg.scale_value(10))
+        else: # Fallback si l'icône n'est pas chargée
+            icon_surf_scaled = pygame.Surface((button_size_w - cfg.scale_value(10), button_size_h - cfg.scale_value(10)))
+            icon_surf_scaled.fill(cfg.COLOR_GREY) # Couleur de placeholder
 
         btn_rect = pygame.Rect(start_x, button_y, button_size_w, button_size_h)
         build_menu_layout.append({
@@ -165,59 +195,55 @@ def initialize_build_menu_layout(game_state):
         })
         start_x += button_size_w + BUILD_MENU_BUTTON_PADDING
 
-# Appeler initialize_build_menu_layout une fois que pygame est initialisé (ex: dans GameState.init_new_game)
-
 
 def draw_build_menu_ui(screen, game_state):
-    """Affiche le menu de construction en bas de l'écran."""
-    if not build_menu_layout: # S'assurer que c'est initialisé
+    if not build_menu_layout:
         initialize_build_menu_layout(game_state)
 
     menu_rect = pygame.Rect(0, cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT, cfg.SCREEN_WIDTH, cfg.UI_BUILD_MENU_HEIGHT)
     pygame.draw.rect(screen, cfg.COLOR_BUILD_MENU_BG, menu_rect)
-    pygame.draw.line(screen, cfg.COLOR_GRID_BORDER, menu_rect.topleft, menu_rect.topright, 2) # Ligne de séparation
+    pygame.draw.line(screen, cfg.COLOR_GRID_BORDER, menu_rect.topleft, menu_rect.topright, 2)
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    hovered_tooltip = None
+    hovered_tooltip_text = None # Renommé pour clarté
 
     for button_info in build_menu_layout:
         btn_rect = button_info["rect"]
         is_selected = (game_state.selected_item_to_place_type == button_info["id"])
         border_color = cfg.COLOR_BUTTON_SELECTED_BORDER if is_selected else cfg.COLOR_BUTTON_BORDER
         
-        pygame.draw.rect(screen, cfg.COLOR_BUTTON_BG, btn_rect) # Fond du bouton
+        pygame.draw.rect(screen, cfg.COLOR_BUTTON_BG, btn_rect)
         if button_info["icon"]:
             icon_x = btn_rect.centerx - button_info["icon"].get_width() // 2
             icon_y = btn_rect.centery - button_info["icon"].get_height() // 2
             screen.blit(button_info["icon"], (icon_x, icon_y))
-        pygame.draw.rect(screen, border_color, btn_rect, 2) # Bordure
+        pygame.draw.rect(screen, border_color, btn_rect, 2)
 
         if btn_rect.collidepoint(mouse_x, mouse_y):
-            hovered_tooltip = button_info["tooltip"]
-            # Afficher le coût si disponible
+            current_tooltip_base = button_info["tooltip"]
             if not button_info["id"].startswith("expand_"):
+                # Utilisation de objects.get_item_stats
                 item_stats = objects.get_item_stats(button_info["id"])
                 cost_money = item_stats.get(cfg.STAT_COST_MONEY, 0)
                 cost_iron = item_stats.get(cfg.STAT_COST_IRON, 0)
-                hovered_tooltip += f" ($:{cost_money} Fe:{cost_iron})"
-            else: # Pour les expansions, le coût est dynamique
+                current_tooltip_base += f" ($:{cost_money} Fe:{cost_iron})"
+            else:
                 cost = 0
-                if button_info["id"] == "expand_up": cost = game_state.calculate_expansion_cost("up")
-                elif button_info["id"] == "expand_side": cost = game_state.calculate_expansion_cost("side")
-                hovered_tooltip += f" ($:{cost})"
+                # CORRIGÉ: appeler la fonction de game_state pour obtenir le coût d'expansion
+                if button_info["id"] == "expand_up": 
+                    cost = game_state.get_next_expansion_cost("up")
+                elif button_info["id"] == "expand_side": 
+                    cost = game_state.get_next_expansion_cost("side")
+                current_tooltip_base += f" ($:{cost})"
+            hovered_tooltip_text = current_tooltip_base
 
 
-    # Afficher le tooltip
-    if hovered_tooltip:
-        tooltip_surf = util.render_text_surface(hovered_tooltip, cfg.FONT_SIZE_SMALL, TOOLTIP_TEXT_COLOR)
+    if hovered_tooltip_text:
+        tooltip_surf = util.render_text_surface(hovered_tooltip_text, cfg.FONT_SIZE_SMALL, TOOLTIP_TEXT_COLOR)
         tooltip_rect = tooltip_surf.get_rect(midbottom=(mouse_x, mouse_y + TOOLTIP_OFFSET_Y))
-        
-        # S'assurer que le tooltip reste à l'écran
         tooltip_rect.clamp_ip(screen.get_rect())
 
-        # Fond pour le tooltip
         bg_rect = tooltip_rect.inflate(cfg.scale_value(10), cfg.scale_value(6))
-        # Créer une surface pour le fond avec alpha
         tooltip_bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
         tooltip_bg_surf.fill(TOOLTIP_BG_COLOR)
         screen.blit(tooltip_bg_surf, bg_rect.topleft)
@@ -225,12 +251,11 @@ def draw_build_menu_ui(screen, game_state):
 
 
 def check_build_menu_click(game_state, mouse_pixel_pos):
-    """Vérifie si un clic a eu lieu sur un bouton du menu de construction. Retourne l'ID de l'item ou None."""
     if not build_menu_layout: return None
 
     menu_ui_rect = pygame.Rect(0, cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT, cfg.SCREEN_WIDTH, cfg.UI_BUILD_MENU_HEIGHT)
     if not menu_ui_rect.collidepoint(mouse_pixel_pos):
-        return None # Clic en dehors du menu
+        return None
 
     for button_info in build_menu_layout:
         if button_info["rect"].collidepoint(mouse_pixel_pos):
@@ -240,70 +265,55 @@ def check_build_menu_click(game_state, mouse_pixel_pos):
 
 
 def draw_placement_preview(screen, game_state):
-    """Affiche un 'fantôme' de l'item sélectionné à la position de la souris sur la grille."""
     if game_state.selected_item_to_place_type and game_state.placement_preview_sprite:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         
-        # Convertir la position de la souris en coin supérieur gauche de la case de la grille
         grid_r, grid_c = util.convert_pixels_to_grid(
             (mouse_x, mouse_y), 
-            (cfg.GRID_OFFSET_X, game_state.buildable_area_rect_pixels.y) # Utiliser l'offset Y actuel de la grille
+            (game_state.buildable_area_rect_pixels.x, game_state.buildable_area_rect_pixels.y) # Utiliser l'offset X et Y actuel
         )
 
         if 0 <= grid_r < game_state.grid_height_tiles and 0 <= grid_c < game_state.grid_width_tiles:
             preview_x, preview_y = util.convert_grid_to_pixels(
                 (grid_r, grid_c), 
-                (cfg.GRID_OFFSET_X, game_state.buildable_area_rect_pixels.y)
+                (game_state.buildable_area_rect_pixels.x, game_state.buildable_area_rect_pixels.y)
             )
             
-            # Teinter le sprite en fonction de la validité du placement
             temp_sprite = game_state.placement_preview_sprite.copy()
             if game_state.is_placement_valid_preview:
-                temp_sprite.fill((0, 255, 0, 100), special_flags=pygame.BLEND_RGBA_MULT) # Vert si valide
+                temp_sprite.fill((0, 255, 0, 100), special_flags=pygame.BLEND_RGBA_MULT)
             else:
-                temp_sprite.fill((255, 0, 0, 100), special_flags=pygame.BLEND_RGBA_MULT) # Rouge si invalide
+                temp_sprite.fill((255, 0, 0, 100), special_flags=pygame.BLEND_RGBA_MULT)
             
             screen.blit(temp_sprite, (preview_x, preview_y))
 
 
 def draw_error_message(screen, message):
-    """Affiche un message d'erreur/d'information temporaire."""
     if not message: return
     error_surf = util.render_text_surface(message, cfg.FONT_SIZE_MEDIUM, cfg.COLOR_RED, background_color=(50,50,50, 200))
     pos_x = (cfg.SCREEN_WIDTH - error_surf.get_width()) // 2
-    pos_y = cfg.UI_TOP_BAR_HEIGHT + cfg.scale_value(20) # Sous la barre du haut
+    pos_y = cfg.UI_TOP_BAR_HEIGHT + cfg.scale_value(20)
     screen.blit(error_surf, (pos_x, pos_y))
 
 
 def draw_pause_screen(screen):
-    """Affiche l'écran de pause."""
     overlay = pygame.Surface((cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 180)) # Noir semi-transparent
+    overlay.fill((0, 0, 0, 180))
     screen.blit(overlay, (0, 0))
 
     pause_text_surf = util.render_text_surface("PAUSE", cfg.FONT_SIZE_LARGE, cfg.COLOR_WHITE)
     text_rect = pause_text_surf.get_rect(center=(cfg.SCREEN_WIDTH // 2, cfg.SCREEN_HEIGHT // 3))
     screen.blit(pause_text_surf, text_rect)
 
-    # TODO: Ajouter des boutons "Reprendre", "Options", "Quitter au Menu"
-    # et la logique dans check_pause_menu_click
-
 
 def check_pause_menu_click(event, mouse_pos):
-    """Vérifie les clics sur les boutons du menu pause. Retourne une action (string) ou None."""
-    # TODO: Définir les rects des boutons du menu pause et vérifier les collisions.
-    # Exemple:
-    # resume_button_rect = pygame.Rect(...)
-    # if event.type == pygame.MOUSEBUTTONDOWN and resume_button_rect.collidepoint(mouse_pos):
-    #     return "resume"
-    # if quit_button_rect.collidepoint(mouse_pos): return "quit_to_menu"
+    # TODO: Implémenter la logique des boutons
     return None
 
 
 def draw_game_over_screen(screen, final_score):
-    """Affiche l'écran de Game Over."""
     overlay = pygame.Surface((cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 220)) # Plus opaque
+    overlay.fill((0, 0, 0, 220))
     screen.blit(overlay, (0, 0))
 
     go_text_surf = util.render_text_surface("GAME OVER", cfg.FONT_SIZE_LARGE, cfg.COLOR_RED)
@@ -314,35 +324,25 @@ def draw_game_over_screen(screen, final_score):
 
     screen.blit(go_text_surf, go_rect)
     screen.blit(score_text_surf, score_rect)
-    
-    # TODO: Ajouter boutons "Rejouer", "Menu Principal"
 
 
 def check_game_over_menu_click(event, mouse_pos):
-    """Vérifie les clics sur les boutons de l'écran Game Over."""
-    # TODO: Définir les rects des boutons et vérifier les collisions.
-    # Exemple:
-    # retry_button_rect = pygame.Rect(...)
-    # if event.type == pygame.MOUSEBUTTONDOWN and retry_button_rect.collidepoint(mouse_pos):
-    #     return "retry"
+    # TODO: Implémenter la logique des boutons
     return None
 
 def draw_tutorial_message(screen, message):
-    """Affiche un message spécifique au tutoriel."""
     if not message: return
-    # Positionner en bas au centre, au-dessus du menu de construction
     msg_surf = util.render_text_surface(message, cfg.FONT_SIZE_MEDIUM, cfg.COLOR_WHITE, background_color=(20,20,80, 200))
     pos_x = (cfg.SCREEN_WIDTH - msg_surf.get_width()) // 2
     pos_y = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT - msg_surf.get_height() - cfg.scale_value(10)
     screen.blit(msg_surf, (pos_x, pos_y))
 
-# --- Fonctions pour le Menu Principal (si non dans main.py) ---
 main_menu_buttons = []
 
 def initialize_main_menu_layout():
     global main_menu_buttons
     main_menu_buttons = []
-    button_texts = ["Jouer", "Tutoriel", "Lore (Optionnel)", "Quitter"]
+    button_texts = ["Jouer", "Tutoriel", "Lore (Optionnel)", "Quitter"] # "Options" ?
     button_actions = [cfg.STATE_GAMEPLAY, cfg.STATE_TUTORIAL, cfg.STATE_LORE, cfg.STATE_QUIT]
     
     btn_width = cfg.scale_value(200)
@@ -357,19 +357,21 @@ def initialize_main_menu_layout():
 
 def draw_main_menu(screen):
     if not main_menu_buttons: initialize_main_menu_layout()
-    screen.fill((20, 30, 50)) # Fond du menu
+    screen.fill(cfg.COLOR_MENU_BACKGROUND) # Utiliser une couleur de cfg si définie
 
-    title_surf = util.render_text_surface("THE LAST STAND: 1941", cfg.FONT_SIZE_LARGE, cfg.COLOR_TEXT) # Utiliser le vrai titre
+    title_surf = util.render_text_surface("THE LAST STAND: 1941", cfg.FONT_SIZE_TITLE, cfg.COLOR_TITLE_TEXT)
     title_rect = title_surf.get_rect(center=(cfg.SCREEN_WIDTH // 2, cfg.scale_value(150)))
     screen.blit(title_surf, title_rect)
 
     mouse_pos = pygame.mouse.get_pos()
     for btn in main_menu_buttons:
         color = cfg.COLOR_BUTTON_BORDER
+        bg_color = cfg.COLOR_BUTTON_BG
         if btn["rect"].collidepoint(mouse_pos):
             color = cfg.COLOR_BUTTON_SELECTED_BORDER
+            bg_color = cfg.COLOR_BUTTON_HOVER_BG # Couleur de survol
         
-        pygame.draw.rect(screen, cfg.COLOR_BUTTON_BG, btn["rect"])
+        pygame.draw.rect(screen, bg_color, btn["rect"])
         pygame.draw.rect(screen, color, btn["rect"], 3)
         
         text_surf = util.render_text_surface(btn["text"], cfg.FONT_SIZE_MEDIUM, cfg.COLOR_TEXT)
@@ -384,17 +386,18 @@ def check_main_menu_click(event, mouse_pos):
                 return btn["action"]
     return None
 
-def draw_lore_screen(screen): # Placeholder
-    screen.fill((10,10,10))
+def draw_lore_screen(screen):
+    screen.fill(cfg.COLOR_MENU_BACKGROUND)
     lore_text = [
         "Année 1941. L'ennemi déferle du ciel.",
         "Votre mission: construire et défendre la dernière ligne.",
         "Protégez la ville à tout prix.",
-        "Appuyez sur Espace ou clic pour continuer..."
+        "",
+        "Appuyez sur Espace ou Clic pour continuer..."
     ]
-    current_y = cfg.scale_value(100)
+    current_y = cfg.SCREEN_HEIGHT // 2 - (len(lore_text) * cfg.scale_value(35)) // 2
     for line in lore_text:
         surf = util.render_text_surface(line, cfg.FONT_SIZE_MEDIUM, cfg.COLOR_TEXT)
         rect = surf.get_rect(center=(cfg.SCREEN_WIDTH//2, current_y))
         screen.blit(surf, rect)
-        current_y += cfg.scale_value(40)
+        current_y += cfg.scale_value(35)
