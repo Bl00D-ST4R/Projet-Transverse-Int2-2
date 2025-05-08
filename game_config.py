@@ -41,6 +41,7 @@ BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS = 2
 BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = 4
 BASE_GRID_OFFSET_X = 50
 BASE_GRID_BOTTOM_PADDING = 10 # Padding entre bas de la grille et haut du menu construction
+BASE_GRID_TOP_PADDING = 20 # Padding below the top UI bar in pixels of reference # <-- AJOUTÉ ICI
 
 BASE_FONT_SIZE_SMALL = 18
 BASE_FONT_SIZE_MEDIUM = 24
@@ -69,7 +70,8 @@ GRID_MAX_EXPANSION_SIDEWAYS_STEPS = BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS
 GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP
 GRID_OFFSET_X = scale_value(BASE_GRID_OFFSET_X)
 GRID_BOTTOM_PADDING = scale_value(BASE_GRID_BOTTOM_PADDING)
-# GRID_OFFSET_Y est calculé dynamiquement dans GameState
+GRID_TOP_PADDING = scale_value(BASE_GRID_TOP_PADDING) # <-- AJOUTÉ ICI
+# GRID_OFFSET_Y est calculé dynamiquement dans GameState en utilisant UI_TOP_BAR_HEIGHT et GRID_TOP_PADDING
 
 FONT_SIZE_SMALL = scale_value(BASE_FONT_SIZE_SMALL)
 FONT_SIZE_MEDIUM = scale_value(BASE_FONT_SIZE_MEDIUM)
@@ -90,17 +92,18 @@ COLOR_BLUE = (0, 0, 200)
 COLOR_YELLOW = (255,255,0)
 COLOR_ORANGE = (255, 165, 0)
 COLOR_CYAN = (0,255,255)
-COLOR_MAGENTA = (255,0,255)
-COLOR_GREY = (128, 128, 128) # Ajout d'un gris générique
+COLOR_MAGENTA = (255,0,255) #the failsafe color
+COLOR_GREY = (128, 128, 128) 
 
 COLOR_GREY_DARK = (50, 50, 50)
 COLOR_GREY_MEDIUM = (128, 128, 128)
 COLOR_GREY_LIGHT = (200, 200, 200)
-COLOR_MAGENTA = (255, 0, 255) #the failsafe color
-COLOR_DARK_GREY_BLUE = (40, 50, 70) 
+COLOR_DARK_GREY_BLUE = (40, 50, 70) # Pour le fond du jeu potentiel
+COLOR_BACKGROUND = COLOR_DARK_GREY_BLUE # Couleur de fond par défaut
 
 COLOR_TEXT = COLOR_GREY_LIGHT
-COLOR_TITLE_TEXT = COLOR_WHITE # Pour le titre du menu principal
+COLOR_UI_TEXT_ON_GREY = COLOR_BLACK # Pour UI Top Bar (Modif 2 de ui_functions)
+COLOR_TITLE_TEXT = COLOR_WHITE 
 COLOR_MONEY = (255, 215, 0)
 COLOR_IRON = (169, 169, 169)
 COLOR_ENERGY_OK = (60, 179, 113)
@@ -117,53 +120,51 @@ COLOR_HP_BAR_BACKGROUND = (40,40,40)
 COLOR_GRID_DEFAULT = (45, 55, 65)
 COLOR_GRID_REINFORCED = (65, 75, 85)
 COLOR_GRID_BORDER = (80, 90, 100)
-COLOR_PLACEMENT_VALID = (0, 255, 0, 100) # Vert transparent pour preview placement
-COLOR_PLACEMENT_INVALID = (255, 0, 0, 100) # Rouge transparent
+COLOR_PLACEMENT_VALID = (0, 255, 0, 100) 
+COLOR_PLACEMENT_INVALID = (255, 0, 0, 100) 
 
 COLOR_BUILD_MENU_BG = (30, 35, 45)
 COLOR_BUTTON_BG = (70, 80, 90)
-COLOR_BUTTON_HOVER_BG = (90, 100, 110) # Ajout pour le survol des boutons
+COLOR_BUTTON_HOVER_BG = (90, 100, 110) 
 COLOR_BUTTON_BORDER = (110, 120, 130)
 COLOR_BUTTON_SELECTED_BORDER = COLOR_MONEY
-COLOR_BUTTON_HOVER_BORDER = (150, 160, 170) # Peut-être redondant si COLOR_BUTTON_SELECTED_BORDER est utilisé pour le survol
+COLOR_BUTTON_HOVER_BORDER = (150, 160, 170) 
 COLOR_TOOLTIP_BG = (30, 30, 30, 220)
 COLOR_TOOLTIP_TEXT = COLOR_WHITE
-COLOR_MENU_BACKGROUND = (20, 30, 50) # Fond pour les menus (principal, pause, etc.)
+COLOR_MENU_BACKGROUND = (20, 30, 50) 
 
 # --- Ressources et Paramètres de Jeu ---
 INITIAL_MONEY = 1000
 INITIAL_IRON = 200
 BASE_IRON_CAPACITY = 500
 INITIAL_CITY_HP = 100
-CITY_HEARTS = 3 # Nombre de coeurs à afficher pour la vie de la ville
+CITY_HEARTS = 3 
+DEBUG_MODE = False # Flag pour activer/désactiver les affichages de debug
 
 # --- Chemins vers les Assets ---
-# MODIFIÉ: Suppression du sous-dossier "sprites/"
 ASSET_PATH = "assets/"
-# SPRITE_PATH = ASSET_PATH + "sprites/" # Supprimé
-BUILDING_SPRITE_PATH = ASSET_PATH + "buildings/" # Ex: assets/buildings/foundation_wood.png
-TURRET_SPRITE_PATH = ASSET_PATH + "turrets/"     # Ex: assets/turrets/turret_base_gatling.png
-ENEMY_SPRITE_PATH = ASSET_PATH + "enemies/"       # Ex: assets/enemies/enemy_basic.png
-PROJECTILE_SPRITE_PATH = ASSET_PATH + "projectiles/" # Ex: assets/projectiles/bullet.png
-UI_SPRITE_PATH = ASSET_PATH + "ui/"             # Ex: assets/ui/icon_money.png
-EFFECT_SPRITE_PATH = ASSET_PATH + "effects/"     # Ex: assets/effects/explosion_01.png
+BUILDING_SPRITE_PATH = ASSET_PATH + "buildings/" 
+TURRET_SPRITE_PATH = ASSET_PATH + "turrets/"     
+ENEMY_SPRITE_PATH = ASSET_PATH + "enemies/"       
+PROJECTILE_SPRITE_PATH = ASSET_PATH + "projectiles/" 
+UI_SPRITE_PATH = ASSET_PATH + "ui/"             
+EFFECT_SPRITE_PATH = ASSET_PATH + "effects/"     
 SOUND_PATH = ASSET_PATH + "sounds/"
 MUSIC_PATH = ASSET_PATH + "music/"
 
 # --- Polices ---
-FONT_NAME_DEFAULT = None # Pygame utilisera sa police par défaut
-# FONT_NAME_PRIMARY = "assets/fonts/YourFont.ttf" # Exemple si vous ajoutez une police
+FONT_NAME_DEFAULT = None 
 
 # --- États du Jeu ---
-STATE_MENU = "main_menu" # Utilisation de chaînes pour plus de clarté
+STATE_MENU = "main_menu" 
 STATE_GAMEPLAY = "gameplay"
 STATE_LORE = "lore_screen"
 STATE_TUTORIAL = "tutorial"
 STATE_OPTIONS = "options_menu"
-STATE_GAME_OVER = "game_over" # Ajouté
+STATE_GAME_OVER = "game_over" 
 STATE_QUIT = "quit_game"
 
-# --- Clés pour les Dictionnaires de Stats (cohérence avec objects.py) ---
+# --- Clés pour les Dictionnaires de Stats ---
 # Général
 STAT_ID = "id_type"
 STAT_SPRITE_DEFAULT_NAME = "sprite_default_name"
@@ -204,14 +205,14 @@ STAT_SIZE_MIN_SCALE_FACTOR = "size_min_scale_factor"
 STAT_SIZE_MAX_SCALE_FACTOR = "size_max_scale_factor"
 STAT_HITBOX_SCALE_FACTORS_WH = "hitbox_scale_factors_wh"
 
-# --- Paramètres de Vagues (utilisés dans wave_definitions.py et game_functions.py) ---
+# --- Paramètres de Vagues ---
 WAVE_INITIAL_PREP_TIME_SEC = 120.0
-WAVE_TIME_BETWEEN_WAVES_SEC = 150.0 # Temps de préparation entre les vagues après la première
+WAVE_TIME_BETWEEN_WAVES_SEC = 150.0 
 
-# --- Coûts d'expansion (valeurs de base, peuvent augmenter) ---
+# --- Coûts d'expansion ---
 BASE_EXPANSION_COST_UP = 500
 BASE_EXPANSION_COST_SIDE = 750
-EXPANSION_COST_INCREASE_FACTOR_UP = 1.5 # Le coût augmente de 50% à chaque fois
+EXPANSION_COST_INCREASE_FACTOR_UP = 1.5 
 EXPANSION_COST_INCREASE_FACTOR_SIDE = 1.8
 
 # --- Fin du fichier game_config.py ---
