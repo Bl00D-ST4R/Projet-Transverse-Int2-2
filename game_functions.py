@@ -1,3 +1,4 @@
+```python
 # game_functions.py
 import pygame
 import random
@@ -21,7 +22,7 @@ class GameState:
         self.time_to_next_wave_seconds = 0.0
         self.current_wave_number = 0
         self.wave_in_progress = False
-        self.enemies_in_current_wave_to_spawn = [] # Liste de (delay_after_last_spawn, enemy_type_id)
+        self.enemies_in_current_wave_to_spawn = [] # Liste de (delay_after_last_spawn, enemy_type_id, enemy_variant)
         self.time_since_last_spawn_in_wave = 0.0
 
         # Ressources
@@ -79,6 +80,7 @@ class GameState:
         self.set_time_for_first_wave()
         self.update_resource_production_consumption() # Calcul initial
 
+
     def load_ui_icons(self):
         # SPRITE: Charger les icônes pour l'UI ici
         self.ui_icons['money'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_money.png")
@@ -87,6 +89,7 @@ class GameState:
         self.ui_icons['heart_full'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_full.png")
         self.ui_icons['heart_empty'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_empty.png")
         # ... ajouter d'autres icônes nécessaires (ex: pour le menu de construction)
+
 
     def update_buildable_area_rect(self):
         """Met à jour le pygame.Rect de la zone constructible basé sur la taille de la grille."""
@@ -105,18 +108,22 @@ class GameState:
             height_pixels
         )
 
+
     def set_time_for_first_wave(self):
         # MODIFIABLE: Temps avant la première vague
         self.time_to_next_wave_seconds = wave_definitions.INITIAL_PREPARATION_TIME_SECONDS
         self.current_wave_number = 0 # Avant la première vague
 
+
     def toggle_pause(self):
         self.game_paused = not self.game_paused
         print(f"Game Paused: {self.game_paused}")
 
+
     def show_error_message(self, message, duration=2.0):
         self.last_error_message = message
         self.error_message_timer = duration
+
 
     def update_timers_and_waves(self, delta_time):
         if self.game_over_flag or self.game_paused:
@@ -151,6 +158,7 @@ class GameState:
                 else:
                     self.time_to_next_wave_seconds = wave_definitions.TIME_BETWEEN_WAVES_SECONDS
 
+
     def start_next_wave(self):
         self.current_wave_number += 1
         if self.current_wave_number > self.max_waves:
@@ -161,6 +169,7 @@ class GameState:
 
         print(f"Starting Wave {self.current_wave_number}")
         self.wave_in_progress = True
+        # Assurez-vous que les données de vague incluent le variant
         self.enemies_in_current_wave_to_spawn = list(self.all_wave_definitions.get(self.current_wave_number, []))
         self.time_since_last_spawn_in_wave = 0.0
         if not self.enemies_in_current_wave_to_spawn: # Vague vide ?
@@ -176,7 +185,8 @@ class GameState:
         
         new_enemy = objects.Enemy((spawn_x_ref, spawn_y_ref), enemy_type_id, variant_data)
         self.enemies.append(new_enemy)
-        print(f"Spawned enemy: {enemy_type_id} at ({spawn_x_ref}, {spawn_y_ref})")
+        #print(f"Spawned enemy: {enemy_type_id} (Variant: {variant_data}) at ({spawn_x_ref}, {spawn_y_ref})") # Debug print
+
 
     def handle_player_input(self, event, mouse_pos_pixels):
         if self.game_over_flag: return
@@ -197,13 +207,27 @@ class GameState:
                         self.selected_item_to_place_type = None # Désélectionner après action
                     else: # C'est un bâtiment/tourelle à placer
                         self.selected_item_to_place_type = clicked_ui_item_id
-                        # Charger le sprite de prévisualisation
                         item_stats = objects.get_item_stats(self.selected_item_to_place_type)
-                        if item_stats and cfg.STAT_SPRITE in item_stats:
-                            sprite_name = item_stats[cfg.STAT_SPRITE]
-                            path_prefix = cfg.BUILDING_SPRITE_PATH if objects.is_building_type(self.selected_item_to_place_type) else cfg.TURRET_SPRITE_PATH
-                            # TODO: Gérer les sprites contextuels pour la prévisualisation si nécessaire
-                            self.placement_preview_sprite = util.scale_sprite_to_tile(util.load_sprite(path_prefix + sprite_name))
+                        # CORRIGÉ: Utiliser la bonne clé pour le sprite par défaut
+                        if item_stats and cfg.STAT_SPRITE_DEFAULT_NAME in item_stats:
+                            sprite_name = item_stats[cfg.STAT_SPRITE_DEFAULT_NAME]
+                            
+                            # Déterminer le chemin du préfixe en fonction du type d'item
+                            if objects.is_building_type(self.selected_item_to_place_type):
+                                path_prefix = cfg.BUILDING_SPRITE_PATH
+                            elif objects.is_turret_type(self.selected_item_to_place_type):
+                                path_prefix = cfg.TURRET_SPRITE_PATH
+                            else: # Fallback ou autre type d'item non géré pour preview
+                                path_prefix = cfg.SPRITE_PATH 
+
+                            # Gérer les sprites contextuels pour la prévisualisation (plus complexe, pour l'instant sprite de base)
+                            # Si l'item a des variants, on pourrait vouloir montrer un variant spécifique ou le "single"
+                            if cfg.STAT_SPRITE_VARIANTS_DICT in item_stats and "single" in item_stats[cfg.STAT_SPRITE_VARIANTS_DICT]:
+                                sprite_name_for_preview = item_stats[cfg.STAT_SPRITE_VARIANTS_DICT]["single"]
+                            else:
+                                sprite_name_for_preview = sprite_name
+
+                            self.placement_preview_sprite = util.scale_sprite_to_tile(util.load_sprite(path_prefix + sprite_name_for_preview))
                             if self.placement_preview_sprite:
                                 self.placement_preview_sprite.set_alpha(150) # Rendre semi-transparent
                         else:
@@ -249,7 +273,7 @@ class GameState:
             base_bottom_row_index = cfg.INITIAL_GRID_HEIGHT_TILES -1 + self.current_expansion_up_tiles
             
             is_on_reinforced_foundation_spot = (grid_r == base_bottom_row_index and \
-                                               0 <= grid_c < cfg.INITIAL_GRID_WIDTH_TILES)
+                                                 0 <= grid_c < cfg.INITIAL_GRID_WIDTH_TILES)
 
             is_on_another_miner = False
             if grid_r > 0 and self.game_grid[grid_r - 1][grid_c] and \
@@ -257,21 +281,30 @@ class GameState:
                 is_on_another_miner = True
             
             if not (is_on_reinforced_foundation_spot or is_on_another_miner):
+                # Afficher un message spécifique pour placement invalide des mineurs
+                # self.show_error_message("Mineurs doivent être placés sur fondations renforcées ou d'autres mineurs.")
                 return False, (grid_r, grid_c)
-        
+            
         # Vérifier ressources (argent, fer)
         item_stats = objects.get_item_stats(item_type)
-        if self.money < item_stats.get(cfg.STAT_COST_MONEY, 0): return False, (grid_r, grid_c)
-        if self.iron_stock < item_stats.get(cfg.STAT_COST_IRON, 0): return False, (grid_r, grid_c)
+        if self.money < item_stats.get(cfg.STAT_COST_MONEY, 0):
+            # self.show_error_message("Pas assez d'argent.")
+            return False, (grid_r, grid_c)
+        if self.iron_stock < item_stats.get(cfg.STAT_COST_IRON, 0):
+            # self.show_error_message("Pas assez de fer.")
+            return False, (grid_r, grid_c)
 
         # Vérifier électricité
         power_impact = item_stats.get(cfg.STAT_POWER, 0)
         projected_prod = self.electricity_produced + (power_impact if power_impact > 0 else 0)
         projected_conso = self.electricity_consumed - (power_impact if power_impact < 0 else 0) # power est négatif pour conso
         if projected_prod < projected_conso and item_type != "generator": # On peut toujours construire un générateur
+             # self.show_error_message("Manque d'électricité.")
              return False, (grid_r, grid_c)
 
+
         return True, (grid_r, grid_c)
+
 
     def try_place_item_on_grid(self, mouse_pixel_pos):
         item_type = self.selected_item_to_place_type
@@ -303,7 +336,14 @@ class GameState:
                 for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
                     nr, nc = grid_r + dr, grid_c + dc
                     if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles and self.game_grid[nr][nc]:
-                        self.check_and_apply_adjacency_bonus(self.game_grid[nr][nc], nr, nc)
+                         # Appliquer le bonus sur le voisin ET vérifier le bonus sur l'objet qui vient d'être placé
+                         # car le bonus peut dépendre des voisins existants.
+                         # Si le voisin est un stockage, il pourrait bénéficier du nouveau stockage.
+                         # Si le nouvel objet est un stockage, il bénéficie des stockages voisins existants.
+                         # Donc on appelle la fonction pour le nouvel item (déjà fait) et pour les voisins potentiels.
+                         neighbor_item = self.game_grid[nr][nc]
+                         if hasattr(neighbor_item, 'apply_adjacency_bonus_effect'):
+                              self.check_and_apply_adjacency_bonus(neighbor_item, nr, nc)
 
 
             self.update_resource_production_consumption()
@@ -312,6 +352,8 @@ class GameState:
             # self.placement_preview_sprite = None
             print(f"Placed {item_type} at ({grid_r},{grid_c})")
         else:
+            # Le message d'erreur est affiché par check_placement_validity si on veut être plus précis
+            # Pour l'instant, on utilise le message générique ici.
             self.show_error_message("Placement invalide!")
             print(f"Invalid placement for {item_type} at ({grid_r},{grid_c})")
 
@@ -321,14 +363,15 @@ class GameState:
         if not item or not hasattr(item, 'apply_adjacency_bonus_effect'):
             return
 
-        adjacent_similar_items_count = 0
-        if item.type == "storage": # Exemple pour stockage
+        # Pour le stockage, le bonus dépend du nombre de stockages voisins directs
+        if item.type == "storage":
+            adjacent_storage_count = 0
             for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles and \
                    self.game_grid[nr][nc] and self.game_grid[nr][nc].type == "storage":
-                    adjacent_similar_items_count +=1
-            item.apply_adjacency_bonus_effect(adjacent_similar_items_count)
+                    adjacent_storage_count +=1
+            item.apply_adjacency_bonus_effect(adjacent_storage_count)
             item.update_sprite_based_on_context(self.game_grid) # Mettre à jour le sprite si le bonus le change
 
 
@@ -339,13 +382,16 @@ class GameState:
         
         can_expand = False
         cost_expansion = 0
+        message = ""
 
         if direction == "up" and self.current_expansion_up_tiles < cfg.MAX_EXPANSION_UP_TILES:
             cost_expansion = cost_up
             can_expand = True
+            message = "Expansion vers le haut réussie!"
         elif direction == "side" and self.current_expansion_sideways_steps < cfg.MAX_EXPANSION_SIDEWAYS_STEPS:
             cost_expansion = cost_side
             can_expand = True
+            message = "Expansion latérale réussie!"
         
         if not can_expand:
             self.show_error_message("Expansion max atteinte.")
@@ -353,31 +399,33 @@ class GameState:
 
         if self.money >= cost_expansion:
             self.money -= cost_expansion
-            new_grid_w = self.grid_width_tiles
-            new_grid_h = self.grid_height_tiles
-
+            
             if direction == "up":
                 self.current_expansion_up_tiles += 1
-                new_grid_h += 1 # Ajoute une rangée. On considère qu'on étend "vers le haut" logiquement,
-                                # mais on ajoute la rangée en bas de la structure de données et on décale l'offset Y de dessin.
-                                # Ou on insère au début et on décale tout.
-                                # Pour simplifier : on étend la grille vers le bas de la structure de données,
-                                # mais la zone de construction s'étend visuellement vers le haut car GRID_OFFSET_Y est recalculé.
-                
-                # Ajoute des nouvelles rangées en bas de la structure game_grid
-                new_rows = [[None for _ in range(self.grid_width_tiles)] for _ in range(1)]
-                self.game_grid.extend(new_rows) # Étend par le bas de la liste principale
-                self.grid_height_tiles = new_grid_h
+                # Ajoute une nouvelle rangée en bas de la structure game_grid (correspondant visuellement au haut)
+                new_row = [None for _ in range(self.grid_width_tiles)]
+                self.game_grid.insert(0, new_row) # Insère au début de la liste des rangées
+                self.grid_height_tiles += 1
+
+                # Important: Mettre à jour les positions (r, c) de tous les objets existants
+                # car leurs indices de rangée ont changé.
+                # L'indice de rangée de chaque objet existant augmente de 1.
+                for row in self.game_grid:
+                     for item in row:
+                          if item:
+                               item.grid_pos = (item.grid_pos[0] + 1, item.grid_pos[1])
+
 
             elif direction == "side":
                 self.current_expansion_sideways_steps += 1
-                new_grid_w += cfg.EXPANSION_SIDEWAYS_TILES_PER_STEP
+                tiles_to_add = cfg.EXPANSION_SIDEWAYS_TILES_PER_STEP
+                new_grid_w = self.grid_width_tiles + tiles_to_add
                 for r_idx in range(self.grid_height_tiles):
-                    self.game_grid[r_idx].extend([None for _ in range(cfg.EXPANSION_SIDEWAYS_TILES_PER_STEP)])
+                    self.game_grid[r_idx].extend([None for _ in range(tiles_to_add)]) # Ajoute à la fin de chaque rangée
                 self.grid_width_tiles = new_grid_w
-            
+
             self.update_buildable_area_rect() # Crucial pour redessiner correctement
-            self.show_error_message("Zone de base étendue!")
+            self.show_error_message(message)
         else:
             self.show_error_message(f"Pas assez d'argent ({cost_expansion}$)")
 
@@ -387,6 +435,13 @@ class GameState:
         self.electricity_consumed = 0
         self.iron_production_per_minute = 0
         temp_iron_storage_capacity_from_buildings = 0
+
+        # Recalculer le bonus de stockage avant de sommer les capacités
+        # Cela gère les cas où l'on vend/place des stockages
+        for building in self.buildings:
+            if building.type == "storage":
+                 self.check_and_apply_adjacency_bonus(building, building.grid_pos[0], building.grid_pos[1])
+
 
         for building in self.buildings:
             if not building.is_active: continue # Ne compte pas si inactif (ex: manque d'énergie globale)
@@ -404,7 +459,7 @@ class GameState:
             temp_iron_storage_capacity_from_buildings += stats.get(cfg.STAT_IRON_STORAGE, 0)
             # Ajouter le bonus d'adjacence effectif du bâtiment (calculé dans check_and_apply_adjacency)
             if hasattr(building, 'current_adjacency_bonus_value'):
-                temp_iron_storage_capacity_from_buildings += building.current_adjacency_bonus_value
+                 temp_iron_storage_capacity_from_buildings += building.current_adjacency_bonus_value
 
 
         for turret in self.turrets:
@@ -418,6 +473,17 @@ class GameState:
         # Mettre à jour l'état actif des bâtiments/tourelles si l'énergie globale est insuffisante
         # (Logique plus avancée: prioriser certains bâtiments, etc.)
         # Pour l'instant, on suppose que tout fonctionne si prod >= conso
+        power_ok = (self.electricity_produced >= self.electricity_consumed)
+        for building in self.buildings:
+             building.is_active = power_ok # Logique simple: tout actif si énergie OK
+             # TODO: Logique pour les générateurs qui produisent même si conso > prod
+             if building.type == "generator":
+                  building.is_active = True # Les générateurs sont toujours actifs
+
+
+        for turret in self.turrets:
+             turret.is_active = power_ok # Logique simple: tout actif si énergie OK
+
 
     def update_resources_per_tick(self, delta_time):
         if self.game_paused or self.game_over_flag: return
@@ -438,8 +504,11 @@ class GameState:
         self.update_resources_per_tick(delta_time)
 
         # 3. Mettre à jour les tourelles (ciblage, tir)
-        power_available_overall = (self.electricity_produced >= self.electricity_consumed)
+        # Le statut actif des tourelles est mis à jour dans update_resource_production_consumption
+        # qui est appelé quand un bâtiment/tourelle est placé/vendu, ou potentiellement à chaque tick si l'énergie fluctue
+        power_available_overall = (self.electricity_produced >= self.electricity_consumed) # Redondant? Déjà dans update_resource_production_consumption
         for turret in self.turrets:
+            # La tourelle utilise sa propre flag is_active pour savoir si elle peut tirer
             turret.update(delta_time, self.enemies, power_available_overall, self) # Passe self (game_state) pour créer projectiles
 
         # 4. Mettre à jour les projectiles (mouvement)
@@ -459,14 +528,19 @@ class GameState:
         # 6. Gérer les collisions
         self.handle_collisions()
 
-        # 7. Nettoyer les objets inactifs (morts, disparus)
+        # 7. Mettre à jour les effets de particules
+        for effect in self.particle_effects:
+            effect.update(delta_time)
+
+        # 8. Nettoyer les objets inactifs (morts, disparus)
         self.cleanup_inactive_objects()
 
-        # 8. Vérifier les conditions de fin de partie
+        # 9. Vérifier les conditions de fin de partie
         if self.city_hp <= 0 and not self.game_over_flag:
             self.game_over_flag = True
             print("GAME OVER - City HP reached 0")
             # TODO: Afficher l'écran de Game Over via ui_functions
+
 
     def city_take_damage(self, amount):
         if self.game_over_flag: return
@@ -487,20 +561,24 @@ class GameState:
                 if proj.rect.colliderect(enemy.hitbox):
                     enemy.take_damage(proj.damage)
                     proj.on_hit(self) # Le projectile peut déclencher AoE via game_state
+                    proj.active = False # Le projectile disparaît après avoir touché (sauf si pénétrant)
+                                        # TODO: Gérer les projectiles pénétrants si nécessaire
                     
                     if not enemy.active: # Ennemi tué
                         self.money += enemy.get_money_value()
                         self.score += enemy.get_score_value()
-                    break # Le projectile ne peut toucher qu'un ennemi (sauf si AoE géré différemment)
+                    break # Le projectile ne peut toucher qu'un ennemi (sauf si AoE géré différemment par on_hit)
     
     def trigger_aoe_damage(self, center_pos, radius, damage):
         """Appelé par un projectile (ex: mortier) pour infliger des dégâts de zone."""
         # SPRITE: Créer une animation d'explosion ici (ajouter à self.particle_effects)
         # exemple: self.particle_effects.append(objects.ExplosionEffect(center_pos))
+        print(f"TRIGGER AOE at {center_pos} with radius {radius} and damage {damage}") # Debug print
         
         scaled_radius = cfg.scale_value(radius) # Si radius est en unités de référence
         for enemy in self.enemies:
             if not enemy.active: continue
+            # Calculer la distance entre le centre de l'AoE et le centre de la hitbox de l'ennemi
             distance_sq = (enemy.hitbox.centerx - center_pos[0])**2 + (enemy.hitbox.centery - center_pos[1])**2
             if distance_sq < scaled_radius**2:
                 # TODO: Réduction des dégâts avec la distance ?
@@ -514,7 +592,26 @@ class GameState:
         self.enemies = [e for e in self.enemies if e.active]
         self.projectiles = [p for p in self.projectiles if p.active]
         self.particle_effects = [eff for eff in self.particle_effects if eff.active]
-        # Les bâtiments/tourelles ne sont pas détruits dans ce modèle, donc pas de nettoyage pour eux.
+        # Les bâtiments/tourelles ne sont pas détruits dans ce modèle (sauf si attaque sur base), donc pas de nettoyage pour eux ici.
+        # Si la logique de destruction/vente est ajoutée, il faudra les nettoyer aussi.
+
+    # TODO: Ajouter une méthode pour gérer la destruction/vente de bâtiments/tourelles
+    # def remove_item_from_grid(self, grid_r, grid_c):
+    #    item = self.game_grid[grid_r][grid_c]
+    #    if item:
+    #         if isinstance(item, objects.Building):
+    #              self.buildings.remove(item)
+    #         elif isinstance(item, objects.Turret):
+    #              self.turrets.remove(item)
+    #         self.game_grid[grid_r][grid_c] = None
+    #         # Réappliquer les bonus d'adjacence aux voisins si l'objet retiré en donnait/en bénéficiait
+    #         self.update_resource_production_consumption() # Pour simple update des totaux
+    #         # Pour les bonus d'adjacence spécifiques (comme stockage), vérifier les voisins
+    #         for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
+    #             nr, nc = grid_r + dr, grid_c + dc
+    #             if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles and self.game_grid[nr][nc]:
+    #                  self.check_and_apply_adjacency_bonus(self.game_grid[nr][nc], nr, nc)
+
 
     def draw_game_world(self):
         # 1. Dessiner le fond (si image ou couleur unie)
@@ -565,3 +662,4 @@ class GameState:
 # Pour un accès plus facile depuis les objets, on peut la rendre accessible.
 # Cependant, il est souvent mieux de passer `game_state` explicitement aux fonctions/méthodes qui en ont besoin.
 # game_state_instance = GameState() # Sera créé dans main.py
+```
