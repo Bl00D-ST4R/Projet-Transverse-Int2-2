@@ -9,6 +9,12 @@ import wave_definitions
 
 class GameState:
     """Classe pour encapsuler l'état global du jeu pour un accès facile."""
+     def draw_game_ui_elements(self):
+        if cfg.DEBUG_MODE: print("DEBUG: GameState.draw_game_ui_elements called.") # ADD THIS LINE
+
+        ui_functions.draw_top_bar_ui(self.screen, self, self.scaler)
+        ui_functions.draw_build_menu_ui(self.screen, self, self.scaler)
+
     def __init__(self, scaler: util.Scaler): # Accepts and stores scaler
         self.scaler = scaler
         self.screen = None
