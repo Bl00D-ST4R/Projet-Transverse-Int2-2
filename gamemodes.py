@@ -3,163 +3,181 @@ import pygame
 import sys
 import game_config as cfg
 import utility_functions as util
-import game_functions # Assuming GameState has toggle_pause, trigger_game_over, handle_player_input methods
+import game_functions  # Assuming GameState has toggle_pause, trigger_game_over, handle_player_input methods
 import ui_functions
 
+
 def run_main_game_mode(screen, clock, game_state_instance: game_functions.GameState, scaler: util.Scaler):
-    game_state_instance.init_new_game(screen, clock) # Crucial for resetting/starting game state
-    game_state_instance.running_game = True
-    # game_state_instance.game_paused is set by init_new_game or toggle_pause
-    # game_state_instance.game_over_flag is set by init_new_game or trigger_game_over
+    # game_state_instance is already initialized with the scaler in main.py
+    # init_new_game is called to reset its state for this specific game mode run
+    game_state_instance.init_new_game(screen, clock, is_tutorial=False)  # Pass False for main game
+    # game_state_instance.running_game = True # This is managed by the while loop condition below
+    # game_paused and game_over_flag are reset by init_new_game
 
-    if cfg.DEBUG_MODE: print(f"GAMEMODE: Lancement du Mode de Jeu Principal. Paused: {game_state_instance.game_paused}, Game Over: {game_state_instance.game_over_flag}")
+    if cfg.DEBUG_MODE: print("GAMEMODE: Lancement du Mode de Jeu Principal...")
 
-    while game_state_instance.running_game:
+    running_this_mode = True  # Local loop control
+    while running_this_mode:
         delta_time = clock.tick(cfg.FPS) / 1000.0
         mouse_pos = pygame.mouse.get_pos()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_state_instance.running_game = False
-                return cfg.STATE_QUIT
+                running_this_mode = False
+                return cfg.STATE_QUIT  # Signal to main app to quit
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if game_state_instance.game_over_flag:
-                        # On game over screen, ESC might mean "go to menu"
                         if cfg.DEBUG_MODE: print("GAMEMODE: ESC on Game Over screen, returning to MENU.")
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_MENU
                     else:
-                        # Toggle pause if not game over (handles both pausing and unpausing)
-                        game_state_instance.toggle_pause() 
-                        if cfg.DEBUG_MODE: print(f"GAMEMODE: ESC pressed. Pause toggled. Paused: {game_state_instance.game_paused}")
-            
+                        game_state_instance.toggle_pause()
+                        if cfg.DEBUG_MODE: print(
+                            f"GAMEMODE: ESC pressed. Pause toggled. Paused: {game_state_instance.game_paused}")
+
             # --- Event handling based on game sub-state (paused, game over, active) ---
             if game_state_instance.game_paused:
-                action = ui_functions.check_pause_menu_click(event, mouse_pos, scaler)
+                action = ui_functions.check_pause_menu_click(event, mouse_pos, scaler)  # Pass scaler
                 if action:
                     if cfg.DEBUG_MODE: print(f"GAMEMODE: Pause menu action: {action}")
                     if action == "resume":
-                        game_state_instance.toggle_pause() # Unpauses
+                        game_state_instance.toggle_pause()
                     elif action == "restart_game":
                         if cfg.DEBUG_MODE: print("GAMEMODE: Action Recommencer depuis pause.")
-                        game_state_instance.running_game = False # Quitte cette instance du mode jeu
-                        return "restart_game" # Signal à main.py pour relancer
+                        running_this_mode = False
+                        return "restart_game"
                     elif action == cfg.STATE_MENU:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_MENU
                     elif action == cfg.STATE_QUIT:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_QUIT
-            
+
             elif game_state_instance.game_over_flag:
-                action = ui_functions.check_game_over_menu_click(event, mouse_pos, scaler)
+                action = ui_functions.check_game_over_menu_click(event, mouse_pos, scaler)  # Pass scaler
                 if action:
                     if cfg.DEBUG_MODE: print(f"GAMEMODE: Game Over menu action: {action}")
-                    if action == "retry": # "retry" is used in initialize_game_over_layout
+                    if action == "retry":
                         if cfg.DEBUG_MODE: print("GAMEMODE: Action Recommencer (Retry) depuis game over.")
-                        game_state_instance.running_game = False
-                        return "restart_game" # main.py handles "restart_game" for both scenarios
+                        running_this_mode = False
+                        return "restart_game"
                     elif action == cfg.STATE_MENU:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_MENU
                     elif action == cfg.STATE_QUIT:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_QUIT
-            
-            else: # Game is active (not paused, not game over)
-                game_state_instance.handle_player_input(event, mouse_pos) # Process regular game input
 
+            else:  # Game is active (not paused, not game over)
+                game_state_instance.handle_player_input(event, mouse_pos)
 
         # --- Logic Update ---
         if not game_state_instance.game_paused and not game_state_instance.game_over_flag:
             game_state_instance.update_game_logic(delta_time)
-            # Check for game over condition AFTER updating logic
-            # This is often handled within update_game_logic or a specific check_game_over method
-            # For example, if city_hp drops to 0:
-            if hasattr(game_state_instance, 'city_hp') and game_state_instance.city_hp <= 0 and not game_state_instance.game_over_flag:
-                game_state_instance.trigger_game_over() # GameState method to set game_over_flag = True
-                if cfg.DEBUG_MODE: print("GAMEMODE: Game Over triggered by city HP.")
-        elif game_state_instance.game_paused or game_state_instance.game_over_flag:
-            # If paused or game over, we still want to update timers for UI messages
+            # Check for game over condition AFTER updating logic (e.g., city_hp drops to 0)
+            # GameState's update_game_logic or a dedicated method should set game_state_instance.game_over_flag
+            if hasattr(game_state_instance,
+                       'city_hp') and game_state_instance.city_hp <= 0 and not game_state_instance.game_over_flag:
+                game_state_instance.trigger_game_over()
+                if cfg.DEBUG_MODE: print("GAMEMODE: Game Over condition met (City HP <= 0).")
+
+        else:  # Still update UI message timers even if paused/game over
             game_state_instance.update_ui_message_timers(delta_time)
 
+        # --- Drawing (Layered Approach) ---
+        # 1. Game World (Background, Grid, Objects, Placement Preview)
+        game_state_instance.draw_game_world()
 
-        # --- Affichage ---
-        # GameState's draw methods should handle what to display based on its internal state
-        # (e.g., if paused, draw_game_ui_elements might call ui_functions.draw_pause_screen)
-        game_state_instance.draw_game_world()       # Dessine fond, grille, objets (even when paused for background effect)
-        game_state_instance.draw_game_ui_elements() # Dessine top bar, build menu, OR pause/game_over screen, messages
+        # 2. Static UI and Modal UI (Top Bar, Build Menu, Messages, Pause/Game Over Screens)
+        game_state_instance.draw_game_ui_elements()
 
         pygame.display.flip()
 
-    # If loop exits without a specific return, default to returning to menu
-    if cfg.DEBUG_MODE: print("GAMEMODE: Main game loop ended, returning to MENU by default.")
-    return cfg.STATE_MENU
+    if cfg.DEBUG_MODE: print("GAMEMODE: Main game loop ended.")
+    return cfg.STATE_MENU  # Default return to menu if loop exits unexpectedly
 
-# run_tutorial_mode can be commenté ou simplifié de manière similaire si vous testez le mode principal
+
 def run_tutorial_mode(screen, clock, game_state_instance: game_functions.GameState, scaler: util.Scaler):
-    game_state_instance.init_new_game(screen, clock, is_tutorial=True) # Crucial
-    game_state_instance.running_game = True
-    # game_state_instance.game_paused = False # Assurer que ce n'est pas en pause
-    # game_state_instance.game_over_flag = False # Tutoriel ne devrait pas avoir de game over typiquement
+    game_state_instance.init_new_game(screen, clock, is_tutorial=True)
+    if cfg.DEBUG_MODE: print("GAMEMODE: Lancement du Mode Tutoriel...")
 
-    if cfg.DEBUG_MODE: print(f"GAMEMODE: Lancement du Mode Tutoriel. Paused: {game_state_instance.game_paused}")
+    # Example tutorial steps (could be loaded from a config file)
+    tutorial_steps = [
+        {"id": 0, "msg": "Bienvenue! Construisez une 'Structure' (Frame) sur une case vide.",
+         "condition": lambda gs: any(b.type == "frame" for b in gs.buildings)},
+        {"id": 1, "msg": "Super! Maintenant, construisez un 'Générateur' sur la structure.",
+         "condition": lambda gs: any(b.type == "generator" for b in gs.buildings)},
+        {"id": 2, "msg": "Bien joué! Les générateurs produisent de l'énergie. Essayez une 'Mine de Fer'.",
+         "condition": lambda gs: any(b.type == "miner" for b in gs.buildings)},
+        {"id": 3, "msg": "Excellent! Les mines produisent du fer. Préparez-vous à vous défendre!",
+         "condition": lambda gs: False},  # End
+    ]
+    current_tutorial_step_index = 0
+    if tutorial_steps:
+        game_state_instance.show_tutorial_message(tutorial_steps[current_tutorial_step_index]["msg"],
+                                                  9999)  # Long duration
 
-    while game_state_instance.running_game:
+    running_this_mode = True
+    while running_this_mode:
         delta_time = clock.tick(cfg.FPS) / 1000.0
         mouse_pos = pygame.mouse.get_pos()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_state_instance.running_game = False
+                running_this_mode = False
                 return cfg.STATE_QUIT
-            
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    # In tutorial, ESC might always go to menu or toggle a simpler pause
-                    if game_state_instance.game_paused:
+                    if game_state_instance.game_over_flag:  # Should not happen in tutorial
+                        running_this_mode = False
+                        return cfg.STATE_MENU
+                    else:
                         game_state_instance.toggle_pause()
-                    else: # If active, or if you want ESC to always exit tutorial pause
-                        game_state_instance.toggle_pause() # Or directly return to menu:
-                        # game_state_instance.running_game = False
-                        # return cfg.STATE_MENU
-                    if cfg.DEBUG_MODE: print(f"GAMEMODE (TUTORIAL): ESC pressed. Pause toggled. Paused: {game_state_instance.game_paused}")
 
             if game_state_instance.game_paused:
                 action = ui_functions.check_pause_menu_click(event, mouse_pos, scaler)
                 if action:
-                    if cfg.DEBUG_MODE: print(f"GAMEMODE (TUTORIAL): Pause menu action: {action}")
                     if action == "resume":
                         game_state_instance.toggle_pause()
-                    elif action == "restart_game": # "restart_tutorial" might be more appropriate
-                        if cfg.DEBUG_MODE: print("GAMEMODE (TUTORIAL): Action Recommencer (Tutoriel) depuis pause.")
-                        game_state_instance.running_game = False
-                        return "restart_tutorial" # Signal à main.py pour relancer le tutoriel
+                    elif action == "restart_game":  # Or "restart_tutorial"
+                        running_this_mode = False
+                        return "restart_tutorial"
                     elif action == cfg.STATE_MENU:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_MENU
                     elif action == cfg.STATE_QUIT:
-                        game_state_instance.running_game = False
+                        running_this_mode = False
                         return cfg.STATE_QUIT
-            # No game_over_flag check for tutorial generally
-            else: # Tutorial is active
+            # No game_over_flag check typically for tutorial
+            else:  # Game is active
                 game_state_instance.handle_player_input(event, mouse_pos)
-                # Tutorial-specific input handling or progression
-                game_state_instance.update_tutorial_specific_logic(event) # Assumed method
+                game_state_instance.update_tutorial_specific_logic(event)  # For any event-driven tutorial logic
 
-        if not game_state_instance.game_paused:
-            game_state_instance.update_game_logic(delta_time) # General updates (timers, etc.)
-            game_state_instance.update_tutorial_progression(delta_time) # Assumed method for tutorial steps
-        elif game_state_instance.game_paused:
-             game_state_instance.update_ui_message_timers(delta_time)
+        # Tutorial Progression Check
+        if not game_state_instance.game_paused and current_tutorial_step_index < len(tutorial_steps):
+            current_step_data = tutorial_steps[current_tutorial_step_index]
+            if current_step_data["condition"](game_state_instance):
+                current_tutorial_step_index += 1
+                if current_tutorial_step_index < len(tutorial_steps):
+                    game_state_instance.show_tutorial_message(tutorial_steps[current_tutorial_step_index]["msg"], 9999)
+                else:
+                    game_state_instance.show_tutorial_message("Tutoriel Terminé! Bravo!",
+                                                              5)  # Short message then maybe auto-exit
+                    # Could add a delay then: running_this_mode = False; return cfg.STATE_MENU
 
+        if not game_state_instance.game_paused and not game_state_instance.game_over_flag:
+            game_state_instance.update_game_logic(delta_time)  # General game logic (timers, etc.)
+            game_state_instance.update_tutorial_progression(delta_time)  # For time-based tutorial steps
+        else:
+            game_state_instance.update_ui_message_timers(delta_time)
 
         game_state_instance.draw_game_world()
-        game_state_instance.draw_game_ui_elements() # Should also handle pause screen for tutorial
+        game_state_instance.draw_game_ui_elements()
 
         pygame.display.flip()
-    
-    if cfg.DEBUG_MODE: print("GAMEMODE: Tutorial loop ended, returning to MENU by default.")
+
+    if cfg.DEBUG_MODE: print("GAMEMODE: Tutorial loop ended.")
     return cfg.STATE_MENU
