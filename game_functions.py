@@ -9,8 +9,8 @@ import wave_definitions
 
 class GameState:
     """Classe pour encapsuler l'état global du jeu pour un accès facile."""
-    def __init__(self, scaler: util.Scaler): # MODIFIED: Accepte le scaler
-        self.scaler = scaler # MODIFIED: Stocker le scaler
+    def __init__(self, scaler: util.Scaler): # Accepte et stocke le scaler
+        self.scaler = scaler
         self.screen = None
         self.clock = None
         self.running_game = True
@@ -40,8 +40,8 @@ class GameState:
 
         # Grille et Construction
         # UTILISER scaler pour obtenir les tailles runtime si nécessaire, mais ici ce sont des comptes de tuiles
-        self.grid_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES # MODIFIED: Use BASE constant
-        self.grid_height_tiles = cfg.BASE_GRID_INITIAL_HEIGHT_TILES # MODIFIED: Use BASE constant
+        self.grid_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES
+        self.grid_height_tiles = cfg.BASE_GRID_INITIAL_HEIGHT_TILES
         self.current_expansion_up_tiles = 0
         self.current_expansion_sideways_steps = 0
         self.grid_initial_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES # MODIFIED: Use BASE constant
@@ -49,7 +49,7 @@ class GameState:
         # La grille stocke les objets ou None. Initialiser avec la taille de base.
         self.game_grid = [[None for _ in range(self.grid_width_tiles)] for _ in range(self.grid_height_tiles)]
         self.buildable_area_rect_pixels = pygame.Rect(0,0,0,0)
-        self.update_buildable_area_rect() # Appel initial qui utilisera self.scaler
+        self.update_buildable_area_rect() # Appel important
 
         self.selected_item_to_place_type = None
         self.placement_preview_sprite = None # Stockera l'original non-scalé
@@ -133,26 +133,26 @@ class GameState:
 
 
     def update_buildable_area_rect(self):
-        """Met à jour le pygame.Rect de la zone constructible basé sur la taille de la grille."""
-        tile_size = self.scaler.get_tile_size() # MODIFIED: Taille runtime
-        ui_menu_height = self.scaler.ui_build_menu_height # MODIFIED: Hauteur runtime
+        tile_size = self.scaler.get_tile_size()
+        ui_menu_height_bottom = self.scaler.ui_build_menu_height # Hauteur du menu du bas
 
         current_grid_pixel_width = self.grid_width_tiles * tile_size
         current_grid_pixel_height = self.grid_height_tiles * tile_size
 
-        # Calculer l'offset Y pour aligner le BAS de la grille avec le HAUT du menu bas
-        dynamic_grid_offset_y = self.scaler.actual_h - ui_menu_height - current_grid_pixel_height # MODIFIED: Use scaler actual_h
+        # Calcul pour que le BAS de la grille soit juste AU-DESSUS du menu du bas
+        dynamic_grid_offset_y = self.scaler.actual_h - ui_menu_height_bottom - current_grid_pixel_height
 
-        # Utiliser GRID_OFFSET_X (devrait être 0 ou une valeur BASE scalée)
-        grid_offset_x = self.scaler.scale_value(cfg.BASE_GRID_OFFSET_X) # MODIFIED: Scale base offset
+        grid_offset_x_runtime = self.scaler.scale_value(cfg.BASE_GRID_OFFSET_X) # Devrait être 0
 
         self.buildable_area_rect_pixels = pygame.Rect(
-            grid_offset_x,
+            grid_offset_x_runtime,
             dynamic_grid_offset_y,
             current_grid_pixel_width,
             current_grid_pixel_height
         )
-        # print(f"DEBUG: Updated buildable_area_rect to: {self.buildable_area_rect_pixels}")
+        if getattr(cfg, 'DEBUG_MODE', False): # Optionnel pour le debug
+            print(f"DEBUG GS: Buildable Area Y: {dynamic_grid_offset_y}, H: {current_grid_pixel_height}, Bottom: {dynamic_grid_offset_y + current_grid_pixel_height}")
+            print(f"DEBUG GS: Bottom UI Top Y: {self.scaler.actual_h - ui_menu_height_bottom}")
 
     def get_reinforced_row_index(self):
         """Retourne l'index de la rangée (depuis le haut, 0-based) qui contient les fondations renforcées."""
