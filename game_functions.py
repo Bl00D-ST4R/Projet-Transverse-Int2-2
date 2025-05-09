@@ -169,7 +169,7 @@ class GameState:
         self.screen.fill(cfg.COLOR_BACKGROUND)  # This fills the entire actual screen
 
         # Draw a rectangle representing the usable area if margins are active
-        if self.scaler.screen_margin > 0 and cfg.DEBUG_MODE:
+        if self.scaler.screen_margin_h > 0 and cfg.DEBUG_MODE:
             usable_debug_rect = pygame.Rect(self.scaler.screen_origin_x, self.scaler.screen_origin_y,
                                             self.scaler.usable_w, self.scaler.usable_h)
             pygame.draw.rect(self.screen, (50, 0, 0), usable_debug_rect, 1)  # Dark red border for usable area

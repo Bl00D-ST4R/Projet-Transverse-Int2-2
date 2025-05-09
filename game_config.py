@@ -3,7 +3,9 @@ import pygame
 import os
 
 # --- Configuration Fenêtre de Référence ---
-SCREEN_MARGIN = 100 # Marge invisible en pixels sur chaque bord de l'écran réel
+#SCREEN_MARGIN = 100 # Marge invisible en pixels sur chaque bord de l'écran réel
+SCREEN_MARGIN_VERTICAL = 100   # Marge invisible en pixels en HAUT et en BAS
+SCREEN_MARGIN_HORIZONTAL = 190 # Marge invisible en pixels à GAUCHE et à DROITE
 REF_WIDTH = 1920
 REF_HEIGHT = 1080
 GAME_TITLE = "The Last Stand: 1941"
