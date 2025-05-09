@@ -41,8 +41,10 @@ class Scaler:
 
         if cfg.DEBUG_MODE:
             print(f"SCALER INFO: Actual Screen: {self.actual_w}x{self.actual_h}, Ref: {self.ref_w}x{self.ref_h}")
-            print(f"SCALER INFO: General Scale: {self.general_scale_factor:.3f}, TileSize: {self.tile_size}")
+            print(f"SCALER INFO: Scale X: {self.scale_x_factor:.3f}, Scale Y: {self.scale_y_factor:.3f}, General Scale: {self.general_scale_factor:.3f}")
+            print(f"SCALER INFO: TileSize: {self.tile_size}")
             print(f"SCALER INFO: TopBarH: {self.ui_top_bar_height}, BuildMenuH: {self.ui_build_menu_height}")
+            print(f"SCALER INFO: Base TopBarH: {cfg.BASE_UI_TOP_BAR_HEIGHT}, Base BuildMenuH: {cfg.BASE_UI_BUILD_MENU_HEIGHT}")
 
     def _scale_dim(self, base_value):
         scaled = base_value * self.general_scale_factor
