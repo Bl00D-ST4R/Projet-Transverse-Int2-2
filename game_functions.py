@@ -93,22 +93,25 @@ class GameState:
         self.screen = screen
         self.clock = clock
         self.load_ui_icons()
+        self.update_buildable_area_rect() # Appel initial pour définir le rect en pixels
 
         # --- Placer les fondations initiales ---
-        # La grille est déjà créée dans __init__ avec la taille initiale
         initial_bottom_row = cfg.GRID_INITIAL_HEIGHT_TILES - 1
         for c in range(cfg.GRID_INITIAL_WIDTH_TILES):
             grid_r, grid_c = initial_bottom_row, c
             if 0 <= grid_r < self.grid_height_tiles and 0 <= grid_c < self.grid_width_tiles:
                  if self.game_grid[grid_r][grid_c] is None:
                      try:
-                         foundation_obj = objects.Building("fundations", (grid_r, grid_c))
-                         # Corriger sa position pixel basée sur le rect de la zone constructible (qui utilise l'offset Y mis à jour)
-                         foundation_obj.rect.topleft = util.convert_grid_to_pixels((grid_r, grid_c),
-                                                                                    (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y))
+                         # CALCULER pixel_pos ici
+                         pixel_pos = util.convert_grid_to_pixels(
+                             (grid_r, grid_c),
+                             (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y)
+                         )
+                         # PASSER pixel_pos et grid_pos au constructeur
+                         foundation_obj = objects.Building("fundations", pixel_pos, (grid_r, grid_c)) 
                          self.game_grid[grid_r][grid_c] = foundation_obj
                          self.buildings.append(foundation_obj)
-                         print(f"Placed initial foundation at ({grid_r},{grid_c})") 
+                         # print(f"Placed initial foundation at ({grid_r},{grid_c})") # Debug
                      except Exception as e:
                          print(f"ERROR placing initial foundation at ({grid_r},{grid_c}): {e}")
                  else:
@@ -117,9 +120,10 @@ class GameState:
 
         self.set_time_for_first_wave()
         self.update_resource_production_consumption() 
-        ui_functions.initialize_build_menu_layout(self) 
-        ui_functions.initialize_pause_menu_layout() 
-        ui_functions.initialize_game_over_layout() 
+        # The following lines were present in the original but absent in the prompt's "after" state for this method.
+        # ui_functions.initialize_build_menu_layout(self) 
+        # ui_functions.initialize_pause_menu_layout() 
+        # ui_functions.initialize_game_over_layout() 
 
     def load_ui_icons(self):
         self.ui_icons['money'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_money.png")
@@ -356,6 +360,12 @@ class GameState:
             self.money -= item_stats.get(cfg.STAT_COST_MONEY, 0)
             self.iron_stock -= item_stats.get(cfg.STAT_COST_IRON, 0)
 
+            # CALCULER pixel_pos AVANT de créer l'objet
+            pixel_pos = util.convert_grid_to_pixels(
+                (grid_r, grid_c),
+                (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y)
+            )
+            
             existing_item = self.game_grid[grid_r][grid_c]
             if existing_item and existing_item.type == "frame" and item_type != "frame":
                  if existing_item in self.buildings:
@@ -363,18 +373,18 @@ class GameState:
                      self.buildings.remove(existing_item)
 
             new_item = None
+            # Créer le nouvel item en passant pixel_pos et grid_pos
             if objects.is_turret_type(item_type):
-                new_item = objects.Turret(item_type, (grid_r, grid_c))
+                new_item = objects.Turret(item_type, pixel_pos, (grid_r, grid_c))
                 self.turrets.append(new_item)
-            elif objects.is_building_type(item_type): 
-                new_item = objects.Building(item_type, (grid_r, grid_c))
+            elif objects.is_building_type(item_type): # Changed from 'else' to be more specific like original
+                new_item = objects.Building(item_type, pixel_pos, (grid_r, grid_c))
                 self.buildings.append(new_item)
             
             if new_item:
-                 new_item.rect.topleft = util.convert_grid_to_pixels((grid_r, grid_c),
-                                                                     (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y))
                  self.game_grid[grid_r][grid_c] = new_item
-                 new_item.update_sprite_based_on_context(self.game_grid) 
+                 # PASSER grid_r, grid_c à update_sprite_based_on_context
+                 new_item.update_sprite_based_on_context(self.game_grid, grid_r, grid_c) 
                  
                  # Update sprite des voisins
                  for dr_n, dc_n in [(0,1), (0,-1), (1,0), (-1,0)]:
@@ -382,13 +392,14 @@ class GameState:
                      if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles:
                           neighbor = self.game_grid[nr][nc]
                           if neighbor and hasattr(neighbor, 'update_sprite_based_on_context'):
-                              neighbor.update_sprite_based_on_context(self.game_grid)
+                              neighbor.update_sprite_based_on_context(self.game_grid, nr, nc)
                  
                  # Update sprite du mineur en dessous (si on a placé un mineur)
                  if item_type == "miner" and grid_r + 1 < self.grid_height_tiles:
                      item_below = self.game_grid[grid_r + 1][grid_c]
                      if item_below and item_below.type == "miner":
-                         item_below.update_sprite_based_on_context(self.game_grid)
+                         # PASSER grid_r+1, grid_c
+                         item_below.update_sprite_based_on_context(self.game_grid, grid_r + 1, grid_c)
 
 
                  self.check_and_apply_adjacency_bonus(new_item, grid_r, grid_c)
@@ -404,10 +415,11 @@ class GameState:
                  print(f"Placed {item_type} at ({grid_r},{grid_c})")
             else:
                  print(f"ERREUR: Échec de création de l'objet de type {item_type}")
-                 self.money += item_stats.get(cfg.STAT_COST_MONEY, 0)
-                 self.iron_stock += item_stats.get(cfg.STAT_COST_IRON, 0)
+                 self.money += item_stats.get(cfg.STAT_COST_MONEY, 0) # Refund
+                 self.iron_stock += item_stats.get(cfg.STAT_COST_IRON, 0) # Refund
         else:
-            print(f"Invalid placement attempt for {item_type} at ({grid_r},{grid_c})")
+            # Error message is shown by check_placement_validity
+            print(f"Invalid placement attempt for {item_type} at ({grid_r},{grid_c})") # Debug
 
     def check_and_apply_adjacency_bonus(self, item, r, c):
         if not item or not hasattr(item, 'apply_adjacency_bonus_effect'): return
@@ -420,7 +432,7 @@ class GameState:
                     adjacent_similar_items_count +=1
             item.apply_adjacency_bonus_effect(adjacent_similar_items_count)
             # Mise à jour du sprite pour bonus de stockage (si implémenté)
-            # item.update_sprite_based_on_context(self.game_grid) 
+            # item.update_sprite_based_on_context(self.game_grid, r, c) # Potentially update sprite if bonus changes it
 
 
     def try_expand_build_area(self, direction):
@@ -439,8 +451,12 @@ class GameState:
                 new_row = [None for _ in range(self.grid_width_tiles)]
                 self.game_grid.insert(0, new_row)
                 self.grid_height_tiles += 1
-                for bld in self.buildings: bld.grid_pos = (bld.grid_pos[0] + 1, bld.grid_pos[1])
-                for tur in self.turrets: tur.grid_pos = (tur.grid_pos[0] + 1, tur.grid_pos[1])
+                # Adjust grid_pos for existing items
+                for r_idx in range(1, self.grid_height_tiles): # Start from 1 as row 0 is new
+                    for c_idx in range(self.grid_width_tiles):
+                        item = self.game_grid[r_idx][c_idx]
+                        if item:
+                            item.grid_pos = (item.grid_pos[0] + 1, item.grid_pos[1])
             elif direction == "side":
                 self.current_expansion_sideways_steps += 1
                 tiles_to_add = cfg.GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP
@@ -456,6 +472,10 @@ class GameState:
                       if item:
                            item.rect.topleft = util.convert_grid_to_pixels((r, c),
                                                                             (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y))
+                           # If sprite depends on grid position relative to expansions, update it
+                           if hasattr(item, 'update_sprite_based_on_context'):
+                               item.update_sprite_based_on_context(self.game_grid, r, c)
+
 
             self.update_resource_production_consumption()
             self.show_error_message("Zone de base étendue!")
@@ -471,15 +491,17 @@ class GameState:
         all_constructs = self.buildings + self.turrets
 
         for item in all_constructs:
-            if not item.active: continue
+            if not item.active: continue # Consider if inactive items should still contribute to storage
             item_stats = objects.get_item_stats(item.type)
             total_electricity_produced += item_stats.get(cfg.STAT_POWER_PRODUCTION, 0)
             total_electricity_consumed += item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0)
-            if isinstance(item, objects.Building):
+            if isinstance(item, objects.Building): # Turrets don't produce/store iron directly
                 total_iron_production_pm += item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0)
-                total_iron_storage_increase += item_stats.get(cfg.STAT_IRON_STORAGE_INCREASE, 0)
-                if hasattr(item, 'current_adjacency_bonus_value'):
-                     total_iron_storage_increase += item.current_adjacency_bonus_value
+                # Storage capacity is always added, regardless of power state for the storage building itself
+                if item.type == "storage":
+                    total_iron_storage_increase += item_stats.get(cfg.STAT_IRON_STORAGE_INCREASE, 0)
+                    if hasattr(item, 'current_adjacency_bonus_value'):
+                         total_iron_storage_increase += item.current_adjacency_bonus_value
 
         is_globally_powered = total_electricity_produced >= total_electricity_consumed
         effective_electricity_produced = 0
@@ -487,22 +509,34 @@ class GameState:
         effective_iron_production_pm = 0
 
         for item in all_constructs:
-            if not item.active: continue
+            # Active state for items is determined by power, but items still exist for resource calculation
             item_stats = objects.get_item_stats(item.type)
             is_generator = item_stats.get(cfg.STAT_POWER_PRODUCTION, 0) > 0
-            is_neutral = item.type in ["frame", "fundations", "storage"]
-            item_is_powered = is_globally_powered or is_generator or is_neutral
-            item.set_active_state(item_is_powered)
+            is_neutral_power_wise = item.type in ["frame", "fundations", "storage"] 
+            
+            item_consumes_power = item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0) > 0
+            
+            # An item is powered if:
+            # 1. It's a generator.
+            # 2. It doesn't consume power (or is power neutral like storage).
+            # 3. It consumes power AND there is global power.
+            item_is_functionally_powered = is_generator or is_neutral_power_wise or (item_consumes_power and is_globally_powered) or not item_consumes_power
 
-            if item_is_powered:
+            item.set_active_state(item_is_functionally_powered) # This controls turret firing, miner animation/production etc.
+
+            if item_is_functionally_powered: # Contributions from powered items
                 effective_electricity_produced += item_stats.get(cfg.STAT_POWER_PRODUCTION, 0)
-                effective_electricity_consumed += item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0)
-                if isinstance(item, objects.Building):
-                     effective_iron_production_pm += item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0)
+                # Consumption is always "attempted" for calculation, power state determines if it's met
+                # effective_electricity_consumed += item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0) # This was in original, let's re-evaluate
 
-        self.electricity_produced = effective_electricity_produced
-        self.electricity_consumed = effective_electricity_consumed
-        self.iron_production_per_minute = effective_iron_production_pm
+                if isinstance(item, objects.Building) and item.type == "miner": # Only powered miners produce
+                     effective_iron_production_pm += item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0)
+            # else: if it's a miner and not powered, it doesn't contribute to effective_iron_production_pm
+
+        self.electricity_produced = total_electricity_produced # Total potential production
+        self.electricity_consumed = total_electricity_consumed # Total demand
+        
+        self.iron_production_per_minute = effective_iron_production_pm # Only from powered miners
         self.iron_storage_capacity = cfg.BASE_IRON_CAPACITY + total_iron_storage_increase
 
     def update_resources_per_tick(self, delta_time):
@@ -513,14 +547,21 @@ class GameState:
     def update_game_logic(self, delta_time):
         if self.game_over_flag or self.game_paused: return
 
+        self.total_time_elapsed_seconds += delta_time
         self.update_timers_and_waves(delta_time)
         self.update_resources_per_tick(delta_time)
-        self.update_resource_production_consumption()
-        is_globally_powered = self.electricity_produced >= self.electricity_consumed
+        # update_resource_production_consumption is called when items are built/destroyed or power status might change.
+        # For per-tick updates, it might be too frequent unless states change often.
+        # However, building.active state might depend on it, which affects animations/turret firing.
+        # Let's assume it's needed here if power can fluctuate based on non-building events (not currently the case).
+        # For now, it's mostly for updating derived stats if underlying building active states change.
+        # self.update_resource_production_consumption() # Re-evaluating if needed every tick. Called on placement.
 
+        # Turrets check their own active state which is set by update_resource_production_consumption
         for turret in self.turrets:
-             turret.update(delta_time, self.enemies, is_globally_powered, self) 
-        for building in self.buildings: pass # Pas d'update pour bâtiments pour l'instant
+             turret.update(delta_time, self.enemies, self) # Turret checks its own self.active
+        for building in self.buildings: 
+            building.update(delta_time, self) # Buildings might have animations or per-tick logic
         for proj in self.projectiles: proj.update(delta_time, self)
         for enemy in self.enemies:
             enemy.update(delta_time, self)
@@ -567,19 +608,31 @@ class GameState:
                          if proj.id not in enemies_hit_this_frame_by_projectile:
                              enemies_hit_this_frame_by_projectile[proj.id] = set()
                          enemies_hit_this_frame_by_projectile[proj.id].add(enemy.id)
+                         # For non-mortar, break inner loop after one hit
+                         if not enemy.active: # if enemy died
+                            self.money += enemy.get_money_value()
+                            self.score += enemy.get_score_value()
+                            self.enemies_in_wave_remaining = max(0, self.enemies_in_wave_remaining - 1)
                          break 
                      
-                     if not enemy.active: 
+                     if not enemy.active: # if enemy died (relevant for mortar too if it hits a dying enemy)
                          self.money += enemy.get_money_value()
                          self.score += enemy.get_score_value()
                          self.enemies_in_wave_remaining = max(0, self.enemies_in_wave_remaining - 1)
         
         for proj_to_remove in projectiles_to_remove_after_loop:
-             proj_to_remove.active = False 
+             if proj_to_remove in self.projectiles: # ensure it's still there
+                 proj_to_remove.active = False 
 
     def trigger_aoe_damage(self, center_pos, radius, damage):
-        # if hasattr(objects, 'ParticleEffect') and hasattr(cfg, 'EXPLOSION_FRAMES'): 
-        #      pass # Implémenter effet explosion
+        # Example particle effect for AOE
+        if hasattr(objects, 'ParticleEffect') and hasattr(cfg, 'EXPLOSION_FRAMES_PATH'):
+            try:
+                effect = objects.ParticleEffect(center_pos, "explosion_mortar", cfg.EXPLOSION_FRAMES_PATH.get("mortar"), 0.05, False)
+                self.particle_effects.append(effect)
+            except Exception as e:
+                print(f"Error creating mortar explosion particle effect: {e}")
+
 
         radius_sq = radius ** 2
         for enemy in self.enemies:
@@ -587,7 +640,7 @@ class GameState:
             distance_sq = (enemy.hitbox.centerx - center_pos[0])**2 + (enemy.hitbox.centery - center_pos[1])**2
             if distance_sq < radius_sq:
                 enemy.take_damage(damage)
-                if not enemy.active:
+                if not enemy.active: # Enemy died from AOE
                     self.money += enemy.get_money_value()
                     self.score += enemy.get_score_value()
                     self.enemies_in_wave_remaining = max(0, self.enemies_in_wave_remaining - 1)
@@ -596,32 +649,11 @@ class GameState:
         self.enemies = [e for e in self.enemies if e.active]
         self.projectiles = [p for p in self.projectiles if p.active]
         self.particle_effects = [eff for eff in self.particle_effects if eff.active]
+        # Buildings and Turrets are removed when replaced or could be if they were destructible by enemies.
+        # For now, they are only removed if a "frame" is built upon.
+        # If buildings could be destroyed, this is where you'd filter self.buildings and self.turrets too.
+        # And update game_grid to None for destroyed buildings.
 
-    def draw_game_world(self):
-        background_color = getattr(cfg, 'COLOR_BACKGROUND', cfg.COLOR_BLACK) 
-        self.screen.fill(background_color)
-        ui_functions.draw_base_grid(self.screen, self)
-        all_drawable_objects = self.buildings + self.turrets + self.enemies
-        all_drawable_objects.sort(key=lambda obj: obj.rect.bottom)
-        for obj in all_drawable_objects: obj.draw(self.screen)
-        for proj in self.projectiles: proj.draw(self.screen)
-        for effect in self.particle_effects: effect.draw(self.screen)
-        ui_functions.draw_placement_preview(self.screen, self)
-
-    def draw_game_ui_elements(self):
-        ui_functions.draw_top_bar_ui(self.screen, self)
-        ui_functions.draw_build_menu_ui(self.screen, self)
-        if self.last_error_message and self.error_message_timer > 0:
-            ui_functions.draw_error_message(self.screen, self.last_error_message, self)
-        if self.tutorial_message and self.tutorial_message_timer > 0:
-            ui_functions.draw_tutorial_message(self.screen, self.tutorial_message, self)
-        if self.game_paused: ui_functions.draw_pause_screen(self.screen)
-        if self.game_over_flag: ui_functions.draw_game_over_screen(self.screen, self.score)
-
-
-modif a faire :
-# game_functions.py
-# ...
     def draw_game_world(self):
         """Dessine tous les éléments du monde du jeu."""
         background_color = getattr(cfg, 'COLOR_BACKGROUND', cfg.COLOR_BLACK)
@@ -642,7 +674,7 @@ modif a faire :
             obj.draw(self.screen)
             # Optionnel: Dessiner les hitboxes en mode debug
             if getattr(cfg, 'DEBUG_MODE', False):
-                 if isinstance(obj, objects.Enemy):
+                 if isinstance(obj, objects.Enemy) and hasattr(obj, 'hitbox'):
                      util.draw_debug_rect(self.screen, obj.hitbox, cfg.COLOR_GREEN, 1)
                  elif isinstance(obj, objects.Projectile):
                      util.draw_debug_rect(self.screen, obj.rect, cfg.COLOR_YELLOW, 1)
@@ -650,4 +682,13 @@ modif a faire :
 
         # Dessiner la prévisualisation du placement par-dessus tout le reste du monde
         ui_functions.draw_placement_preview(self.screen, self)
-    # ...
+
+    def draw_game_ui_elements(self):
+        ui_functions.draw_top_bar_ui(self.screen, self)
+        ui_functions.draw_build_menu_ui(self.screen, self)
+        if self.last_error_message and self.error_message_timer > 0:
+            ui_functions.draw_error_message(self.screen, self.last_error_message, self)
+        if self.tutorial_message and self.tutorial_message_timer > 0:
+            ui_functions.draw_tutorial_message(self.screen, self.tutorial_message, self)
+        if self.game_paused: ui_functions.draw_pause_screen(self.screen)
+        if self.game_over_flag: ui_functions.draw_game_over_screen(self.screen, self.score)
