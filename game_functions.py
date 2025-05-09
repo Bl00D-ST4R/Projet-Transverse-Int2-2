@@ -134,19 +134,24 @@ class GameState:
 
     def update_buildable_area_rect(self):
         """Met à jour le pygame.Rect de la zone constructible basé sur la taille de la grille."""
-        width_pixels = self.grid_width_tiles * cfg.TILE_SIZE
-        height_pixels = self.grid_height_tiles * cfg.TILE_SIZE
+        current_grid_pixel_width = self.grid_width_tiles * cfg.TILE_SIZE
+        current_grid_pixel_height = self.grid_height_tiles * cfg.TILE_SIZE
 
-        # CORRIGÉ: Calculer l'offset Y depuis le HAUT de l'écran, sous la barre UI
-        dynamic_grid_offset_y = cfg.UI_TOP_BAR_HEIGHT + cfg.GRID_TOP_PADDING
+        # CORRIGÉ: Calculer l'offset Y pour que le BAS de la grille soit juste au-dessus du menu du bas
+        # Position Y du bas de la grille = dynamic_grid_offset_y + current_grid_pixel_height
+        # Position Y du haut du menu du bas = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT
+        # On veut : position Y du bas de la grille = position Y du haut du menu du bas
+        # Donc : dynamic_grid_offset_y + current_grid_pixel_height = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT
+        # => dynamic_grid_offset_y = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT - current_grid_pixel_height
+        dynamic_grid_offset_y = cfg.SCREEN_HEIGHT - cfg.UI_BUILD_MENU_HEIGHT - current_grid_pixel_height
 
         self.buildable_area_rect_pixels = pygame.Rect(
-            cfg.GRID_OFFSET_X,
+            cfg.GRID_OFFSET_X, # Devrait maintenant être 0
             dynamic_grid_offset_y,
-            width_pixels,
-            height_pixels
+            current_grid_pixel_width,
+            current_grid_pixel_height
         )
-        print(f"DEBUG: Updated buildable_area_rect to: {self.buildable_area_rect_pixels}") # Debug
+        print(f"DEBUG: Updated buildable_area_rect to: {self.buildable_area_rect_pixels}") # Garder pour debug
         # Note: Le calcul de reinforced_foundation_row_index_visual est retiré d'ici.
         # Il doit être calculé au moment où l'information est nécessaire (dessin, placement)
         # en se basant sur current_expansion_up_tiles et GRID_INITIAL_HEIGHT_TILES.
