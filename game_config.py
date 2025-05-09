@@ -1,25 +1,11 @@
 # game_config.py
 import pygame
 
-# --- Configuration de la Fenêtre et du Framerate ---
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
-GAME_TITLE = "The Last Stand: 1941"
-FPS = 60
-
-# --- Système de Scaling Dynamique ---
+# --- Configuration Fenêtre de Référence ---
 REF_WIDTH = 1920
 REF_HEIGHT = 1080
-SCALE_X = SCREEN_WIDTH / REF_WIDTH
-SCALE_Y = SCREEN_HEIGHT / REF_HEIGHT
-GENERAL_SCALE = min(SCALE_X, SCALE_Y) # Maintien des proportions
-
-def scale_value(value):
-    if isinstance(value, (int, float)):
-        return int(value * GENERAL_SCALE)
-    if isinstance(value, (tuple, list)):
-        return tuple(int(v * GENERAL_SCALE) for v in value)
-    return value
+GAME_TITLE = "The Last Stand: 1941"
+FPS = 60
 
 # --- Dimensions et Positions de Base (pour REF_WIDTH x REF_HEIGHT) ---
 BASE_TILE_SIZE = 90
@@ -27,6 +13,7 @@ BASE_UI_TOP_BAR_HEIGHT = 45
 BASE_UI_BUILD_MENU_HEIGHT = 90 # Hauteur UI du bas
 BASE_UI_BUILD_MENU_BUTTON_SIZE_W = 80
 BASE_UI_BUILD_MENU_BUTTON_SIZE_H = 80
+BASE_UI_BUILD_MENU_BUTTON_PADDING = 5
 BASE_UI_ICON_SIZE_DEFAULT = 30 # Taille par défaut pour les icônes (ex: ressources)
 BASE_UI_TOOLTIP_OFFSET_Y = -30
 BASE_UI_TOOLTIP_PADDING_X = 10
@@ -40,9 +27,8 @@ BASE_GRID_MAX_EXPANSION_UP_TILES = 2
 BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS = 2
 BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = 4
 # CORRIGÉ: Mettre l'offset X de base à 0
-BASE_GRID_OFFSET_X = 0 
-# BASE_GRID_BOTTOM_PADDING = 10 # Plus nécessaire pour ce calcul
-# BASE_GRID_TOP_PADDING = 20 # Plus nécessaire pour ce calcul # <-- AJOUTÉ ICI (dans l'original, maintenant retiré)
+BASE_GRID_OFFSET_X = 0 # Commence à gauche
+# BASE_GRID_BOTTOM_PADDING n'est plus utilisé directement pour le calcul de Y
 
 BASE_FONT_SIZE_SMALL = 18
 BASE_FONT_SIZE_MEDIUM = 24
@@ -50,42 +36,8 @@ BASE_FONT_SIZE_LARGE = 36
 BASE_FONT_SIZE_XLARGE = 48
 BASE_FONT_SIZE_TITLE = 60 # Ajout pour le titre du menu principal
 
-# --- Valeurs Scalées (utilisées directement dans le jeu) ---
-TILE_SIZE = scale_value(BASE_TILE_SIZE)
-UI_TOP_BAR_HEIGHT = scale_value(BASE_UI_TOP_BAR_HEIGHT)
-UI_BUILD_MENU_HEIGHT = scale_value(BASE_UI_BUILD_MENU_HEIGHT) # UI du bas
-UI_BUILD_MENU_BUTTON_SIZE = (scale_value(BASE_UI_BUILD_MENU_BUTTON_SIZE_W), scale_value(BASE_UI_BUILD_MENU_BUTTON_SIZE_H))
-UI_BUILD_MENU_BUTTON_PADDING = scale_value(5)
-UI_ICON_SIZE_DEFAULT = scale_value(BASE_UI_ICON_SIZE_DEFAULT)
-UI_TOOLTIP_OFFSET_Y = scale_value(BASE_UI_TOOLTIP_OFFSET_Y)
-UI_TOOLTIP_PADDING_X = scale_value(BASE_UI_TOOLTIP_PADDING_X)
-UI_TOOLTIP_PADDING_Y = scale_value(BASE_UI_TOOLTIP_PADDING_Y)
-UI_ERROR_MESSAGE_OFFSET_Y = scale_value(BASE_UI_ERROR_MESSAGE_OFFSET_Y)
-UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y = scale_value(BASE_UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y)
-
-
-GRID_INITIAL_WIDTH_TILES = BASE_GRID_INITIAL_WIDTH_TILES
-GRID_INITIAL_HEIGHT_TILES = BASE_GRID_INITIAL_HEIGHT_TILES
-GRID_MAX_EXPANSION_UP_TILES = BASE_GRID_MAX_EXPANSION_UP_TILES
-GRID_MAX_EXPANSION_SIDEWAYS_STEPS = BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS
-GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP
-# CORRIGÉ: Mettre l'offset X scalé à 0
-GRID_OFFSET_X = scale_value(BASE_GRID_OFFSET_X) # Deviendra 0
-
-# GRID_OFFSET_Y est calculé dynamiquement dans GameState
-# GRID_BOTTOM_PADDING = scale_value(BASE_GRID_BOTTOM_PADDING) # Commenté/Supprimé
-# GRID_TOP_PADDING = scale_value(BASE_GRID_TOP_PADDING) # Commenté/Supprimé # <-- AJOUTÉ ICI (dans l'original, maintenant retiré)
-# GRID_OFFSET_Y est calculé dynamiquement dans GameState en utilisant UI_TOP_BAR_HEIGHT et une nouvelle variable GRID_TOP_PADDING si besoin
-
-FONT_SIZE_SMALL = scale_value(BASE_FONT_SIZE_SMALL)
-FONT_SIZE_MEDIUM = scale_value(BASE_FONT_SIZE_MEDIUM)
-FONT_SIZE_LARGE = scale_value(BASE_FONT_SIZE_LARGE)
-FONT_SIZE_XLARGE = scale_value(BASE_FONT_SIZE_XLARGE)
-FONT_SIZE_TITLE = scale_value(BASE_FONT_SIZE_TITLE) # Ajout pour le titre
-
-# --- Physique ---
+# --- Physique (Base) ---
 BASE_GRAVITY_PHYSICS = 9.81 * 20 # m/s^2 de référence * facteur de conversion unités de jeu/mètre
-GRAVITY = BASE_GRAVITY_PHYSICS * GENERAL_SCALE # Gravité en "unités de jeu scalées"/s^2
 
 # --- Couleurs ---
 COLOR_BLACK = (0, 0, 0)
@@ -97,7 +49,7 @@ COLOR_YELLOW = (255,255,0)
 COLOR_ORANGE = (255, 165, 0)
 COLOR_CYAN = (0,255,255)
 COLOR_MAGENTA = (255,0,255) #the failsafe color
-COLOR_GREY = (128, 128, 128) 
+COLOR_GREY = (128, 128, 128)
 
 COLOR_GREY_DARK = (50, 50, 50)
 COLOR_GREY_MEDIUM = (128, 128, 128)
@@ -107,7 +59,7 @@ COLOR_BACKGROUND = COLOR_DARK_GREY_BLUE # Couleur de fond par défaut
 
 COLOR_TEXT = COLOR_GREY_LIGHT
 COLOR_UI_TEXT_ON_GREY = COLOR_BLACK # Pour UI Top Bar (Modif 2 de ui_functions)
-COLOR_TITLE_TEXT = COLOR_WHITE 
+COLOR_TITLE_TEXT = COLOR_WHITE
 COLOR_MONEY = (255, 215, 0)
 COLOR_IRON = (169, 169, 169)
 COLOR_ENERGY_OK = (60, 179, 113)
@@ -124,48 +76,48 @@ COLOR_HP_BAR_BACKGROUND = (40,40,40)
 COLOR_GRID_DEFAULT = (45, 55, 65)
 COLOR_GRID_REINFORCED = (65, 75, 85)
 COLOR_GRID_BORDER = (80, 90, 100)
-COLOR_PLACEMENT_VALID = (0, 255, 0, 100) 
-COLOR_PLACEMENT_INVALID = (255, 0, 0, 100) 
+COLOR_PLACEMENT_VALID = (0, 255, 0, 100)
+COLOR_PLACEMENT_INVALID = (255, 0, 0, 100)
 
 COLOR_BUILD_MENU_BG = (30, 35, 45)
 COLOR_BUTTON_BG = (70, 80, 90)
-COLOR_BUTTON_HOVER_BG = (90, 100, 110) 
+COLOR_BUTTON_HOVER_BG = (90, 100, 110)
 COLOR_BUTTON_BORDER = (110, 120, 130)
 COLOR_BUTTON_SELECTED_BORDER = COLOR_MONEY
-COLOR_BUTTON_HOVER_BORDER = (150, 160, 170) 
+COLOR_BUTTON_HOVER_BORDER = (150, 160, 170)
 COLOR_TOOLTIP_BG = (30, 30, 30, 220)
 COLOR_TOOLTIP_TEXT = COLOR_WHITE
-COLOR_MENU_BACKGROUND = (20, 30, 50) 
+COLOR_MENU_BACKGROUND = (20, 30, 50)
 
 # --- Ressources et Paramètres de Jeu ---
 INITIAL_MONEY = 1000
 INITIAL_IRON = 200
 BASE_IRON_CAPACITY = 500
 INITIAL_CITY_HP = 100
-CITY_HEARTS = 3 
+CITY_HEARTS = 3
 DEBUG_MODE = False # Flag pour activer/désactiver les affichages de debug
 
 # --- Chemins vers les Assets ---
 ASSET_PATH = "assets/"
-BUILDING_SPRITE_PATH = ASSET_PATH + "buildings/" 
-TURRET_SPRITE_PATH = ASSET_PATH + "turrets/"     
-ENEMY_SPRITE_PATH = ASSET_PATH + "enemies/"       
-PROJECTILE_SPRITE_PATH = ASSET_PATH + "projectiles/" 
-UI_SPRITE_PATH = ASSET_PATH + "ui/"             
-EFFECT_SPRITE_PATH = ASSET_PATH + "effects/"     
+BUILDING_SPRITE_PATH = ASSET_PATH + "buildings/"
+TURRET_SPRITE_PATH = ASSET_PATH + "turrets/"
+ENEMY_SPRITE_PATH = ASSET_PATH + "enemies/"
+PROJECTILE_SPRITE_PATH = ASSET_PATH + "projectiles/"
+UI_SPRITE_PATH = ASSET_PATH + "ui/"
+EFFECT_SPRITE_PATH = ASSET_PATH + "effects/"
 SOUND_PATH = ASSET_PATH + "sounds/"
 MUSIC_PATH = ASSET_PATH + "music/"
 
 # --- Polices ---
-FONT_NAME_DEFAULT = None 
+FONT_NAME_DEFAULT = None
 
 # --- États du Jeu ---
-STATE_MENU = "main_menu" 
+STATE_MENU = "main_menu"
 STATE_GAMEPLAY = "gameplay"
 STATE_LORE = "lore_screen"
 STATE_TUTORIAL = "tutorial"
 STATE_OPTIONS = "options_menu"
-STATE_GAME_OVER = "game_over" 
+STATE_GAME_OVER = "game_over"
 STATE_QUIT = "quit_game"
 
 # --- Clés pour les Dictionnaires de Stats ---
@@ -211,12 +163,12 @@ STAT_HITBOX_SCALE_FACTORS_WH = "hitbox_scale_factors_wh"
 
 # --- Paramètres de Vagues ---
 WAVE_INITIAL_PREP_TIME_SEC = 120.0
-WAVE_TIME_BETWEEN_WAVES_SEC = 150.0 
+WAVE_TIME_BETWEEN_WAVES_SEC = 150.0
 
 # --- Coûts d'expansion ---
 BASE_EXPANSION_COST_UP = 500
 BASE_EXPANSION_COST_SIDE = 750
-EXPANSION_COST_INCREASE_FACTOR_UP = 1.5 
+EXPANSION_COST_INCREASE_FACTOR_UP = 1.5
 EXPANSION_COST_INCREASE_FACTOR_SIDE = 1.8
 
 # --- Fin du fichier game_config.py ---
