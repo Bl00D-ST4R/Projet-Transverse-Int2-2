@@ -81,7 +81,6 @@ def run_main_game_mode(screen, clock, game_state_instance, scaler):
         # draw_game_world et draw_game_ui_elements passent scaler aux draws UI via game_state_instance.scaler
         game_state_instance.draw_game_world()
         game_state_instance.draw_game_ui_elements()
-
         pygame.display.flip()
 
     print("Mode de Jeu Principal terminé.")
