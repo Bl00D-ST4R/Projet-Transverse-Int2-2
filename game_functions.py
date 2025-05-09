@@ -1,10 +1,11 @@
 # game_functions.py
 import pygame
+import random # random was in the original full version, might not be needed in simplified
 import game_config as cfg
 import utility_functions as util
 import objects
-import ui_functions # We will simplify its drawing functions
-# import wave_definitions # Not directly relevant to this UI fix
+import ui_functions
+# import wave_definitions # Not strictly needed for the simplified UI test
 
 class GameState:
     """Classe pour encapsuler l'état global du jeu pour un accès facile. (Simplified)"""
@@ -40,7 +41,7 @@ class GameState:
         self.selected_item_to_place_type = None # For build menu interaction
         self.placement_preview_sprite = None
         self.is_placement_valid_preview = False
-        self.ui_icons = {} # For icons in UI if any (not used in simplified version)
+        self.ui_icons = {} # Assurez-vous que ui_icons est initialisé ici
         self.buildings = [] # For initial foundations
 
         # For error/tutorial messages if draw_game_ui_elements uses them
@@ -50,10 +51,28 @@ class GameState:
         self.tutorial_message_timer = 0.0
         self.game_paused = False # For pause screen
 
+    # AJOUTER CETTE MÉTHODE SI ELLE MANQUE OU LA CORRIGER :
+    def load_ui_icons(self):
+        """Charge les sprites originaux pour les icônes UI. Le scaling se fait au dessin."""
+        if cfg.DEBUG_MODE: print("GameState DEBUG: Chargement des icônes UI...")
+        try:
+            self.ui_icons['money'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_money.png")
+            self.ui_icons['iron'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_iron.png")
+            self.ui_icons['energy'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_energy.png")
+            self.ui_icons['heart_full'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_full.png")
+            self.ui_icons['heart_empty'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_empty.png")
+            # Ajoutez d'autres icônes ici si nécessaire pour le build menu, etc.
+            # Exemple:
+            # self.ui_icons['icon_frame'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_frame.png")
+            if cfg.DEBUG_MODE: print(f"  money icon loaded: {isinstance(self.ui_icons.get('money'), pygame.Surface)}")
+        except Exception as e:
+            if cfg.DEBUG_MODE: print(f"ERREUR lors du chargement des icônes UI: {e}")
+
     def init_new_game(self, screen, clock):
         self.__init__(self.scaler) # Re-initialize with the existing scaler
         self.screen = screen
         self.clock = clock
+        self.load_ui_icons() # CET APPEL EST CORRECT
         self.update_buildable_area_rect() # CRUCIAL: Call after scaler is set and screen known
 
         # Place initial "fundations" (simplified for now, just to see them)
@@ -189,3 +208,11 @@ class GameState:
     # Other methods from the original GameState are removed for this simplified version.
     # Methods like update_timers_and_waves, resource updates, enemy spawning,
     # collisions, expansions, etc., are not part of this UI-focused test.
+    
+    # Minimal get_next_expansion_cost to prevent errors if ui_functions.draw_build_menu_ui calls it
+    def get_next_expansion_cost(self, direction):
+        if direction == "up":
+            return int(cfg.BASE_EXPANSION_COST_UP * (cfg.EXPANSION_COST_INCREASE_FACTOR_UP ** getattr(self, 'current_expansion_up_tiles', 0)))
+        elif direction == "side":
+            return int(cfg.BASE_EXPANSION_COST_SIDE * (cfg.EXPANSION_COST_INCREASE_FACTOR_SIDE ** getattr(self, 'current_expansion_sideways_steps', 0)))
+        return "Max" # Fallback
