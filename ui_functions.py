@@ -131,7 +131,7 @@ def draw_top_bar_ui(screen, game_state, scaler: util.Scaler):
         current_x += money_rect.width + padding_x * 1.5
 
     iron_text_surf = util.render_text_surface(
-        f"Fe: {int(game_state.iron_stock)}/{game_state.iron_storage_capacity} (+{game_state.iron_production_per_minute:.1f}/m)",
+        f"Fe: {int(game_state.iron_stock)}/{game_state.iron_storage_capacity} (+P<0.1f>)",
         scaler.font_size_medium, cfg.COLOR_IRON
     )
     if iron_text_surf:
