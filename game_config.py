@@ -24,7 +24,7 @@ def scale_value(value):
 # --- Dimensions et Positions de Base (pour REF_WIDTH x REF_HEIGHT) ---
 BASE_TILE_SIZE = 90
 BASE_UI_TOP_BAR_HEIGHT = 45
-BASE_UI_BUILD_MENU_HEIGHT = 90
+BASE_UI_BUILD_MENU_HEIGHT = 90 # Hauteur UI du bas
 BASE_UI_BUILD_MENU_BUTTON_SIZE_W = 80
 BASE_UI_BUILD_MENU_BUTTON_SIZE_H = 80
 BASE_UI_ICON_SIZE_DEFAULT = 30 # Taille par défaut pour les icônes (ex: ressources)
@@ -39,9 +39,10 @@ BASE_GRID_INITIAL_HEIGHT_TILES = 4
 BASE_GRID_MAX_EXPANSION_UP_TILES = 2
 BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS = 2
 BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = 4
-BASE_GRID_OFFSET_X = 50
-BASE_GRID_BOTTOM_PADDING = 10 # Padding entre bas de la grille et haut du menu construction
-BASE_GRID_TOP_PADDING = 20 # Padding below the top UI bar in pixels of reference # <-- AJOUTÉ ICI
+# CORRIGÉ: Mettre l'offset X de base à 0
+BASE_GRID_OFFSET_X = 0 
+# BASE_GRID_BOTTOM_PADDING = 10 # Plus nécessaire pour ce calcul
+# BASE_GRID_TOP_PADDING = 20 # Plus nécessaire pour ce calcul # <-- AJOUTÉ ICI (dans l'original, maintenant retiré)
 
 BASE_FONT_SIZE_SMALL = 18
 BASE_FONT_SIZE_MEDIUM = 24
@@ -52,7 +53,7 @@ BASE_FONT_SIZE_TITLE = 60 # Ajout pour le titre du menu principal
 # --- Valeurs Scalées (utilisées directement dans le jeu) ---
 TILE_SIZE = scale_value(BASE_TILE_SIZE)
 UI_TOP_BAR_HEIGHT = scale_value(BASE_UI_TOP_BAR_HEIGHT)
-UI_BUILD_MENU_HEIGHT = scale_value(BASE_UI_BUILD_MENU_HEIGHT)
+UI_BUILD_MENU_HEIGHT = scale_value(BASE_UI_BUILD_MENU_HEIGHT) # UI du bas
 UI_BUILD_MENU_BUTTON_SIZE = (scale_value(BASE_UI_BUILD_MENU_BUTTON_SIZE_W), scale_value(BASE_UI_BUILD_MENU_BUTTON_SIZE_H))
 UI_BUILD_MENU_BUTTON_PADDING = scale_value(5)
 UI_ICON_SIZE_DEFAULT = scale_value(BASE_UI_ICON_SIZE_DEFAULT)
@@ -68,10 +69,13 @@ GRID_INITIAL_HEIGHT_TILES = BASE_GRID_INITIAL_HEIGHT_TILES
 GRID_MAX_EXPANSION_UP_TILES = BASE_GRID_MAX_EXPANSION_UP_TILES
 GRID_MAX_EXPANSION_SIDEWAYS_STEPS = BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS
 GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP
-GRID_OFFSET_X = scale_value(BASE_GRID_OFFSET_X)
-GRID_BOTTOM_PADDING = scale_value(BASE_GRID_BOTTOM_PADDING)
-GRID_TOP_PADDING = scale_value(BASE_GRID_TOP_PADDING) # <-- AJOUTÉ ICI
-# GRID_OFFSET_Y est calculé dynamiquement dans GameState en utilisant UI_TOP_BAR_HEIGHT et GRID_TOP_PADDING
+# CORRIGÉ: Mettre l'offset X scalé à 0
+GRID_OFFSET_X = scale_value(BASE_GRID_OFFSET_X) # Deviendra 0
+
+# GRID_OFFSET_Y est calculé dynamiquement dans GameState
+# GRID_BOTTOM_PADDING = scale_value(BASE_GRID_BOTTOM_PADDING) # Commenté/Supprimé
+# GRID_TOP_PADDING = scale_value(BASE_GRID_TOP_PADDING) # Commenté/Supprimé # <-- AJOUTÉ ICI (dans l'original, maintenant retiré)
+# GRID_OFFSET_Y est calculé dynamiquement dans GameState en utilisant UI_TOP_BAR_HEIGHT et une nouvelle variable GRID_TOP_PADDING si besoin
 
 FONT_SIZE_SMALL = scale_value(BASE_FONT_SIZE_SMALL)
 FONT_SIZE_MEDIUM = scale_value(BASE_FONT_SIZE_MEDIUM)
