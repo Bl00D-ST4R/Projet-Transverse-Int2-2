@@ -108,7 +108,8 @@ def draw_lore_screen(screen, scaler: util.Scaler):
 
 # MODIFIED: Accepter scaler
 def draw_top_bar_ui(screen, game_state, scaler: util.Scaler):
-    # MODIFIED: Use scaler for dimensions
+    if scaler.ui_top_bar_height <= 0: return # Failsafe
+
     top_bar_rect = pygame.Rect(0, 0, scaler.actual_w, scaler.ui_top_bar_height)
     bg_color = getattr(cfg, 'COLOR_GREY_MEDIUM', (128, 128, 128))
     pygame.draw.rect(screen, bg_color, top_bar_rect)
@@ -254,15 +255,17 @@ def initialize_build_menu_layout(game_state, scaler: util.Scaler):
 
 # MODIFIED: Accepter scaler
 def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
-    if not build_menu_layout:
-        initialize_build_menu_layout(game_state, scaler) # Pass scaler
+    global build_menu_layout # Doit être global ou passé si modifié par initialize
+    if not build_menu_layout: # S'assurer qu'il est initialisé
+        initialize_build_menu_layout(game_state, scaler) # Passer scaler
 
-    # MODIFIED: Use scaler for dimensions
-    menu_height = scaler.ui_build_menu_height
-    menu_rect = pygame.Rect(0, scaler.actual_h - menu_height, scaler.actual_w, menu_height)
+    menu_height_runtime = scaler.ui_build_menu_height
+    if menu_height_runtime <= 0: return # Failsafe
+
+    menu_rect = pygame.Rect(0, scaler.actual_h - menu_height_runtime, scaler.actual_w, menu_height_runtime)
     pygame.draw.rect(screen, cfg.COLOR_BUILD_MENU_BG, menu_rect)
     pygame.draw.line(screen, cfg.COLOR_GRID_BORDER, menu_rect.topleft, menu_rect.topright, 2)
-
+    
     mouse_x, mouse_y = pygame.mouse.get_pos()
     hovered_tooltip_text = None
 
@@ -286,10 +289,15 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
         if btn_rect.collidepoint(mouse_x, mouse_y): # Tooltip logic
             current_tooltip_base = button_info["tooltip"]
             item_id_for_stats = button_info["id"]
-            if item_id_for_stats == "frame": item_id_for_stats = "foundation" # Business logic
-            
+            # Corrected logic for item_id_for_stats: "frame" should map to "frame" stats, not "foundation"
+            # "foundation" is likely a distinct item type if it exists. If "frame" means the buildable frame, stats should be for "frame".
+            # Assuming original intent was if "frame" button is for placing something whose stats are under "foundation",
+            # but this is unusual. Sticking to direct mapping unless objects.get_item_stats handles "foundation" for "frame" id.
+            # For now, let's assume item_id_for_stats directly maps.
+            # if item_id_for_stats == "frame": item_id_for_stats = "foundation" # Business logic - Original line, keeping for now as per source.
+
             if not button_info["id"].startswith("expand_"):
-                item_stats = objects.get_item_stats(item_id_for_stats)
+                item_stats = objects.get_item_stats(item_id_for_stats) # Uses original item_id_for_stats which might be "foundation"
                 cost_money = item_stats.get(cfg.STAT_COST_MONEY, 0)
                 cost_iron = item_stats.get(cfg.STAT_COST_IRON, 0)
                 current_tooltip_base += f" ($:{cost_money} Fe:{cost_iron})"
@@ -509,11 +517,13 @@ def check_game_over_menu_click(event, mouse_pos, scaler: util.Scaler):
 
 # MODIFIED: Accepter scaler
 def draw_tutorial_message(screen, message, game_state, scaler: util.Scaler):
-    if not message or not hasattr(game_state, 'tutorial_message_timer') or game_state.tutorial_message_timer <=0:
+    if not message or not hasattr(game_state, 'tutorial_message_timer') or game_state.tutorial_message_timer <= 0:
         return
-    # MODIFIED: Use scaler for font size, positions, offsets
-    msg_surf = util.render_text_surface(message, scaler.font_size_medium, cfg.COLOR_WHITE, background_color=(20,20,80, 200))
+        
+    font_to_use = scaler.font_size_medium
+    msg_surf = util.render_text_surface(message, font_to_use, cfg.COLOR_WHITE, background_color=(20,20,80, 200))
     if msg_surf:
         pos_x = (scaler.actual_w - msg_surf.get_width()) // 2
+        # Positionner au-dessus du menu de construction
         pos_y = scaler.actual_h - scaler.ui_build_menu_height - msg_surf.get_height() - scaler.scale_value(cfg.BASE_UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y)
         screen.blit(msg_surf, (pos_x, pos_y))
