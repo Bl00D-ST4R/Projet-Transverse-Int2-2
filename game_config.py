@@ -6,39 +6,37 @@ REF_WIDTH = 1920
 REF_HEIGHT = 1080
 GAME_TITLE = "The Last Stand: 1941"
 FPS = 60
-BASE_GRID_OFFSET_X = 0
 
 # --- Dimensions et Positions de Base (pour REF_WIDTH x REF_HEIGHT) ---
 BASE_TILE_SIZE = 90
 BASE_UI_TOP_BAR_HEIGHT = 45
-BASE_UI_BUILD_MENU_HEIGHT = 90 # Hauteur UI du bas
+BASE_UI_BUILD_MENU_HEIGHT = 90
 BASE_UI_BUILD_MENU_BUTTON_SIZE_W = 80
 BASE_UI_BUILD_MENU_BUTTON_SIZE_H = 80
 BASE_UI_BUILD_MENU_BUTTON_PADDING = 5
-BASE_UI_ICON_SIZE_DEFAULT = 30 # Taille par défaut pour les icônes (ex: ressources)
+BASE_UI_ICON_SIZE_DEFAULT = 30
 BASE_UI_TOOLTIP_OFFSET_Y = -30
 BASE_UI_TOOLTIP_PADDING_X = 10
 BASE_UI_TOOLTIP_PADDING_Y = 6
-BASE_UI_ERROR_MESSAGE_OFFSET_Y = 20 # Depuis le haut de la barre du haut
-BASE_UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y = 10 # Depuis le haut du menu de construction
+BASE_UI_ERROR_MESSAGE_OFFSET_Y = 20
+BASE_UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y = 10
+BASE_UI_GENERAL_PADDING = 15 # General padding for UI elements
 
 BASE_GRID_INITIAL_WIDTH_TILES = 4
 BASE_GRID_INITIAL_HEIGHT_TILES = 4
 BASE_GRID_MAX_EXPANSION_UP_TILES = 2
 BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS = 2
 BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP = 4
-# CORRIGÉ: Mettre l'offset X de base à 0
-BASE_GRID_OFFSET_X = 0 # Commence à gauche
-# BASE_GRID_BOTTOM_PADDING n'est plus utilisé directement pour le calcul de Y
+BASE_GRID_OFFSET_X = 0 # Grid starts at the left edge of the screen
 
 BASE_FONT_SIZE_SMALL = 18
 BASE_FONT_SIZE_MEDIUM = 24
 BASE_FONT_SIZE_LARGE = 36
 BASE_FONT_SIZE_XLARGE = 48
-BASE_FONT_SIZE_TITLE = 60 # Ajout pour le titre du menu principal
+BASE_FONT_SIZE_TITLE = 60
 
 # --- Physique (Base) ---
-BASE_GRAVITY_PHYSICS = 9.81 * 20 # m/s^2 de référence * facteur de conversion unités de jeu/mètre
+BASE_GRAVITY_PHYSICS = 9.81 * 20
 
 # --- Couleurs ---
 COLOR_BLACK = (0, 0, 0)
@@ -59,7 +57,7 @@ COLOR_DARK_GREY_BLUE = (40, 50, 70) # Pour le fond du jeu potentiel
 COLOR_BACKGROUND = COLOR_DARK_GREY_BLUE # Couleur de fond par défaut
 
 COLOR_TEXT = COLOR_GREY_LIGHT
-COLOR_UI_TEXT_ON_GREY = COLOR_BLACK # Pour UI Top Bar (Modif 2 de ui_functions)
+COLOR_UI_TEXT_ON_GREY = COLOR_BLACK # Pour UI Top Bar
 COLOR_TITLE_TEXT = COLOR_WHITE
 COLOR_MONEY = (255, 215, 0)
 COLOR_IRON = (169, 169, 169)
@@ -90,13 +88,14 @@ COLOR_TOOLTIP_BG = (30, 30, 30, 220)
 COLOR_TOOLTIP_TEXT = COLOR_WHITE
 COLOR_MENU_BACKGROUND = (20, 30, 50)
 
+
 # --- Ressources et Paramètres de Jeu ---
 INITIAL_MONEY = 1000
 INITIAL_IRON = 200
 BASE_IRON_CAPACITY = 500
 INITIAL_CITY_HP = 100
 CITY_HEARTS = 3
-DEBUG_MODE = False # Flag pour activer/désactiver les affichages de debug
+
 
 # --- Chemins vers les Assets ---
 ASSET_PATH = "assets/"
@@ -171,5 +170,7 @@ BASE_EXPANSION_COST_UP = 500
 BASE_EXPANSION_COST_SIDE = 750
 EXPANSION_COST_INCREASE_FACTOR_UP = 1.5
 EXPANSION_COST_INCREASE_FACTOR_SIDE = 1.8
+
+DEBUG_MODE = True # Set to True to see debug prints and rects
 
 # --- Fin du fichier game_config.py ---
