@@ -131,7 +131,7 @@ def draw_top_bar_ui(screen, game_state, scaler: util.Scaler):
         current_x += money_rect.width + padding_x * 1.5
 
     iron_text_surf = util.render_text_surface(
-        f"Fe: {int(game_state.iron_stock)}/{game_state.iron_storage_capacity} (+P<0.1f>)",
+        f"Fe: {int(game_state.iron_stock)}/{game_state.iron_storage_capacity} (+P<0.1f>)", # This formatting might be an issue if +P is meant to be a variable
         scaler.font_size_medium, cfg.COLOR_IRON
     )
     if iron_text_surf:
@@ -190,11 +190,8 @@ def draw_base_grid(screen, game_state, scaler: util.Scaler):
             # Logic for is_reinforced_spot uses BASE counts, which is fine
             is_reinforced_spot = False
             if hasattr(cfg, 'BASE_GRID_INITIAL_HEIGHT_TILES') and hasattr(cfg, 'BASE_GRID_INITIAL_WIDTH_TILES'):
-                 # Reinforced row is determined by expansion logic in GameState using current_expansion_up_tiles
-                 # and BASE_GRID_INITIAL_HEIGHT_TILES.
-                 # Here we use get_reinforced_row_index from GameState if available, or replicate its logic.
                  reinforced_row_idx = game_state.current_expansion_up_tiles + (cfg.BASE_GRID_INITIAL_HEIGHT_TILES -1)
-                 if r == reinforced_row_idx and c < game_state.grid_initial_width_tiles: # Check against initial width for "original" reinforced part
+                 if r == reinforced_row_idx and c < game_state.grid_initial_width_tiles:
                       is_reinforced_spot = True
 
 
@@ -230,18 +227,18 @@ def initialize_build_menu_layout(game_state, scaler: util.Scaler):
     button_base_h = cfg.BASE_UI_BUILD_MENU_BUTTON_SIZE_H
     button_size_w = scaler.scale_value(button_base_w)
     button_size_h = scaler.scale_value(button_base_h)
-    button_padding = scaler.scale_value(cfg.BASE_UI_BUILD_MENU_BUTTON_PADDING) # Used BUILD_MENU_BUTTON_PADDING before
+    button_padding = scaler.scale_value(cfg.BASE_UI_BUILD_MENU_BUTTON_PADDING)
 
-    start_x = scaler.scale_value(10) # Base padding
+    start_x = scaler.scale_value(10)
     menu_height = scaler.ui_build_menu_height
     menu_rect_y = scaler.actual_h - menu_height
     button_y = menu_rect_y + (menu_height - button_size_h) // 2
     
-    icon_padding_internal = scaler.scale_value(10) # Internal padding for icon inside button
+    icon_padding_internal = scaler.scale_value(10)
 
     for item_def in menu_item_definitions:
         icon_full_path = cfg.UI_SPRITE_PATH + item_def["icon_name"]
-        icon_surf_orig = util.load_sprite(icon_full_path) # Load unscaled
+        icon_surf_orig = util.load_sprite(icon_full_path)
 
         icon_scaled_w = button_size_w - icon_padding_internal
         icon_scaled_h = button_size_h - icon_padding_internal
@@ -254,13 +251,13 @@ def initialize_build_menu_layout(game_state, scaler: util.Scaler):
             "tooltip": item_def["tooltip"],
             "icon": icon_surf_scaled
         })
-        start_x += button_size_w + button_padding # Use scaled padding
+        start_x += button_size_w + button_padding
 
 # MODIFIED: Accepter scaler
 def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
-    global build_menu_layout # Doit être global ou passé si modifié par initialize
-    if not build_menu_layout: # S'assurer qu'il est initialisé
-        initialize_build_menu_layout(game_state, scaler) # Passer scaler
+    global build_menu_layout
+    if not build_menu_layout:
+        initialize_build_menu_layout(game_state, scaler)
 
     menu_height_runtime = scaler.ui_build_menu_height
     if menu_height_runtime <= 0:
@@ -268,7 +265,7 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
         return
 
     menu_rect = pygame.Rect(0, scaler.actual_h - menu_height_runtime, scaler.actual_w, menu_height_runtime)
-    bg_color = cfg.COLOR_BUILD_MENU_BG # Alias for clarity
+    bg_color = cfg.COLOR_BUILD_MENU_BG
     if cfg.DEBUG_MODE: print(f"DEBUG: Drawing build menu. Rect: {menu_rect}, Color: {bg_color}, Scaler Actual H: {scaler.actual_h}, Menu Height Runtime: {menu_height_runtime}")
     pygame.draw.rect(screen, bg_color, menu_rect)
     pygame.draw.line(screen, cfg.COLOR_GRID_BORDER, menu_rect.topleft, menu_rect.topright, 2)
@@ -277,38 +274,31 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
     hovered_tooltip_text = None
 
     for button_info in build_menu_layout:
-        # Button drawing logic based on scaled layout is fine
         btn_rect = button_info["rect"]
         is_selected = (hasattr(game_state, 'selected_item_to_place_type') and \
                        game_state.selected_item_to_place_type == button_info["id"])
         border_color = cfg.COLOR_BUTTON_SELECTED_BORDER if is_selected else cfg.COLOR_BUTTON_BORDER
-        bg_color = cfg.COLOR_BUTTON_BG
+        bg_color_btn = cfg.COLOR_BUTTON_BG # Renamed to avoid conflict with menu_rect's bg_color
         if btn_rect.collidepoint(mouse_x, mouse_y):
-            bg_color = cfg.COLOR_BUTTON_HOVER_BG
+            bg_color_btn = cfg.COLOR_BUTTON_HOVER_BG
 
-        pygame.draw.rect(screen, bg_color, btn_rect)
+        pygame.draw.rect(screen, bg_color_btn, btn_rect)
         if button_info["icon"]:
             icon_x = btn_rect.centerx - button_info["icon"].get_width() // 2
             icon_y = btn_rect.centery - button_info["icon"].get_height() // 2
             screen.blit(button_info["icon"], (icon_x, icon_y))
         pygame.draw.rect(screen, border_color, btn_rect, 2)
 
-        if btn_rect.collidepoint(mouse_x, mouse_y): # Tooltip logic
+        if btn_rect.collidepoint(mouse_x, mouse_y):
             current_tooltip_base = button_info["tooltip"]
             item_id_for_stats = button_info["id"]
-            # Corrected logic for item_id_for_stats: "frame" should map to "frame" stats, not "foundation"
-            # "foundation" is likely a distinct item type if it exists. If "frame" means the buildable frame, stats should be for "frame".
-            # Assuming original intent was if "frame" button is for placing something whose stats are under "foundation",
-            # but this is unusual. Sticking to direct mapping unless objects.get_item_stats handles "foundation" for "frame" id.
-            # For now, let's assume item_id_for_stats directly maps.
-            # if item_id_for_stats == "frame": item_id_for_stats = "foundation" # Business logic - Original line, keeping for now as per source.
-
+            
             if not button_info["id"].startswith("expand_"):
-                item_stats = objects.get_item_stats(item_id_for_stats) # Uses original item_id_for_stats which might be "foundation"
+                item_stats = objects.get_item_stats(item_id_for_stats)
                 cost_money = item_stats.get(cfg.STAT_COST_MONEY, 0)
                 cost_iron = item_stats.get(cfg.STAT_COST_IRON, 0)
                 current_tooltip_base += f" ($:{cost_money} Fe:{cost_iron})"
-            else: # Expansion costs
+            else:
                 cost = 0
                 if hasattr(game_state, 'get_next_expansion_cost'):
                     cost = game_state.get_next_expansion_cost("up" if button_info["id"] == "expand_up" else "side")
@@ -316,7 +306,6 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
             hovered_tooltip_text = current_tooltip_base
 
     if hovered_tooltip_text:
-        # MODIFIED: Use scaler for font size and tooltip offsets/paddings
         tooltip_surf = util.render_text_surface(hovered_tooltip_text, scaler.font_size_small, TOOLTIP_TEXT_COLOR)
         if tooltip_surf:
             tooltip_offset_y_scaled = scaler.scale_value(cfg.BASE_UI_TOOLTIP_OFFSET_Y)
@@ -338,11 +327,10 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
 # MODIFIED: Accepter scaler
 def check_build_menu_click(game_state, mouse_pixel_pos, scaler: util.Scaler):
     if not build_menu_layout: return None
-    # MODIFIED: Use scaler for menu rect dimensions
     menu_ui_rect = pygame.Rect(0, scaler.actual_h - scaler.ui_build_menu_height, scaler.actual_w, scaler.ui_build_menu_height)
     if not menu_ui_rect.collidepoint(mouse_pixel_pos):
         return None
-    for button_info in build_menu_layout: # build_menu_layout contains scaled rects
+    for button_info in build_menu_layout:
         if button_info["rect"].collidepoint(mouse_pixel_pos):
             return button_info["id"]
     return None
@@ -353,22 +341,18 @@ def draw_placement_preview(screen, game_state, scaler: util.Scaler):
        hasattr(game_state, 'placement_preview_sprite') and game_state.placement_preview_sprite and \
        hasattr(game_state, 'buildable_area_rect_pixels'):
 
-        # MODIFIED: game_state.placement_preview_sprite is original, scale it here
         preview_sprite_orig = game_state.placement_preview_sprite
         preview_sprite_scaled = util.scale_sprite_to_tile(preview_sprite_orig, scaler)
 
-        if preview_sprite_scaled: # Only if scaling succeeded
+        if preview_sprite_scaled:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             grid_origin = (game_state.buildable_area_rect_pixels.x, game_state.buildable_area_rect_pixels.y)
-            # MODIFIED: Pass scaler to conversion functions
             grid_r, grid_c = util.convert_pixels_to_grid((mouse_x, mouse_y), grid_origin, scaler)
 
             if 0 <= grid_r < game_state.grid_height_tiles and 0 <= grid_c < game_state.grid_width_tiles:
-                preview_x, preview_y = util.convert_grid_to_pixels((grid_r, grid_c), grid_origin, scaler) # MODIFIED
+                preview_x, preview_y = util.convert_grid_to_pixels((grid_r, grid_c), grid_origin, scaler)
                 
-                temp_sprite = preview_sprite_scaled.copy() # Use the scaled sprite
-                # Set alpha on the copy if desired (original has alpha set from GameState)
-                # temp_sprite.set_alpha(150) # Example
+                temp_sprite = preview_sprite_scaled.copy()
                 color_tint = cfg.COLOR_PLACEMENT_INVALID
                 if hasattr(game_state, 'is_placement_valid_preview') and game_state.is_placement_valid_preview:
                     color_tint = cfg.COLOR_PLACEMENT_VALID
@@ -379,77 +363,96 @@ def draw_placement_preview(screen, game_state, scaler: util.Scaler):
 def draw_error_message(screen, message, game_state, scaler: util.Scaler):
     if not message or not hasattr(game_state, 'error_message_timer') or game_state.error_message_timer <= 0:
         return
-    # MODIFIED: Use scaler for font size, positions, offsets
     error_surf = util.render_text_surface(message, scaler.font_size_medium, cfg.COLOR_RED, background_color=(50,50,50, 200))
     if error_surf:
         pos_x = (scaler.actual_w - error_surf.get_width()) // 2
         pos_y = scaler.ui_top_bar_height + scaler.scale_value(cfg.BASE_UI_ERROR_MESSAGE_OFFSET_Y)
         screen.blit(error_surf, (pos_x, pos_y))
 
-pause_menu_buttons_layout = []
+# --- PAUSE MENU ---
+pause_menu_buttons_layout = [] # Stores {"text": str, "rect": pygame.Rect, "action": str}
 
-# MODIFIED: Accepter scaler
 def initialize_pause_menu_layout(scaler: util.Scaler):
+    """Prépare la disposition des boutons du menu pause."""
     global pause_menu_buttons_layout
-    pause_menu_buttons_layout = []
+    pause_menu_buttons_layout = [] # Réinitialiser
+
     options = [
         {"text": "Reprendre", "action": "resume"},
-        {"text": "Recommencer", "action": "restart"},
-        {"text": "Menu Principal", "action": cfg.STATE_MENU}, # Using cfg constant
-        {"text": "Quitter le Jeu", "action": cfg.STATE_QUIT}  # Using cfg constant
+        {"text": "Recommencer", "action": "restart_game"}, # Action pour redémarrer le niveau/jeu
+        {"text": "Menu Principal", "action": cfg.STATE_MENU}, # Action pour retourner au menu principal
+        {"text": "Quitter le Jeu", "action": cfg.STATE_QUIT}    # Action pour quitter l'application
     ]
-    # MODIFIED: Use scaler for dimensions
-    btn_width = scaler.scale_value(220) # Example base width: 220
-    btn_height = scaler.scale_value(50) # Example base height: 50
-    spacing = scaler.scale_value(20)    # Example base spacing: 20
+
+    btn_base_width = 250 # Largeur de base pour les boutons
+    btn_base_height = 50  # Hauteur de base
+    spacing_base = 20     # Espacement de base
+
+    btn_width = scaler.scale_value(btn_base_width)
+    btn_height = scaler.scale_value(btn_base_height)
+    spacing = scaler.scale_value(spacing_base)
     num_buttons = len(options)
-    total_height = num_buttons * btn_height + (num_buttons - 1) * spacing
-    start_y = (scaler.actual_h - total_height) / 2 + scaler.scale_value(50) # Example base offset: 50
+
+    # total_buttons_height = num_buttons * btn_height + (num_buttons - 1) * spacing # Not strictly needed for this layout
+    # Centrer verticalement, un peu en dessous du texte "PAUSE"
+    start_y = (scaler.actual_h // 3) + scaler.scale_value(70) # Ajuster cette valeur pour la position Y
 
     for i, opt in enumerate(options):
-        rect = pygame.Rect((scaler.actual_w - btn_width) / 2, start_y + i * (btn_height + spacing), btn_width, btn_height)
+        rect_x = (scaler.actual_w - btn_width) // 2
+        rect_y = start_y + i * (btn_height + spacing)
+        rect = pygame.Rect(rect_x, rect_y, btn_width, btn_height)
         pause_menu_buttons_layout.append({"text": opt["text"], "rect": rect, "action": opt["action"]})
+    if cfg.DEBUG_MODE: print("UI DEBUG: Pause menu layout initialized.")
 
-# MODIFIED: Accepter scaler
+
 def draw_pause_screen(screen, scaler: util.Scaler):
-    if not pause_menu_buttons_layout:
-        initialize_pause_menu_layout(scaler) # Pass scaler
+    """Affiche l'écran de pause avec des boutons cliquables."""
+    if not pause_menu_buttons_layout: # S'assurer que le layout est initialisé
+        initialize_pause_menu_layout(scaler)
 
-    # MODIFIED: Use scaler for dimensions
+    # Dessiner un overlay semi-transparent
     overlay = pygame.Surface((scaler.actual_w, scaler.actual_h), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 180))
+    overlay.fill((0, 0, 0, 180)) # Noir semi-transparent
     screen.blit(overlay, (0, 0))
 
-    # MODIFIED: Use scaler for font size and positions
+    # Afficher le texte "PAUSE"
     pause_text_surf = util.render_text_surface("PAUSE", scaler.font_size_xlarge, cfg.COLOR_WHITE)
     if pause_text_surf:
         text_rect = pause_text_surf.get_rect(center=(scaler.actual_w // 2, scaler.actual_h // 3))
         screen.blit(pause_text_surf, text_rect)
 
+    # Dessiner les boutons
     mouse_pos = pygame.mouse.get_pos()
-    for btn in pause_menu_buttons_layout: # Layout contains scaled rects
-        bg_color = cfg.COLOR_BUTTON_BG
-        border_color = cfg.COLOR_BUTTON_BORDER
-        if btn["rect"].collidepoint(mouse_pos):
-            bg_color = cfg.COLOR_BUTTON_HOVER_BG
-            border_color = cfg.COLOR_BUTTON_SELECTED_BORDER
+    for btn_info in pause_menu_buttons_layout:
+        btn_rect = btn_info["rect"]
+        btn_text = btn_info["text"]
         
-        pygame.draw.rect(screen, bg_color, btn["rect"])
-        pygame.draw.rect(screen, border_color, btn["rect"], 3)
-        
-        # MODIFIED: Use scaler for font size
-        btn_text_surf = util.render_text_surface(btn["text"], scaler.font_size_medium, cfg.COLOR_TEXT)
-        if btn_text_surf:
-            btn_text_rect = btn_text_surf.get_rect(center=btn["rect"].center)
-            screen.blit(btn_text_surf, btn_text_rect)
+        is_hovered = btn_rect.collidepoint(mouse_pos)
+        bg_color = cfg.COLOR_BUTTON_HOVER_BG if is_hovered else cfg.COLOR_BUTTON_BG
+        border_color = cfg.COLOR_BUTTON_SELECTED_BORDER if is_hovered else cfg.COLOR_BUTTON_BORDER
 
-# MODIFIED: Accepter scaler (though primarily uses layout)
-def check_pause_menu_click(event, mouse_pos, scaler: util.Scaler):
-    if not pause_menu_buttons_layout: return None
-    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-        for btn in pause_menu_buttons_layout: # Layout contains scaled rects
-            if btn["rect"].collidepoint(mouse_pos):
-                return btn["action"] # Action is already string or cfg constant
+        pygame.draw.rect(screen, bg_color, btn_rect)
+        pygame.draw.rect(screen, border_color, btn_rect, 3) # Bordure de 3 pixels
+
+        text_surf = util.render_text_surface(btn_text, scaler.font_size_medium, cfg.COLOR_TEXT)
+        if text_surf:
+            text_rect = text_surf.get_rect(center=btn_rect.center)
+            screen.blit(text_surf, text_rect)
+    if cfg.DEBUG_MODE and not pause_menu_buttons_layout:
+        print("UI WARNING: Pause menu layout is empty in draw_pause_screen.")
+
+
+def check_pause_menu_click(event, mouse_pos, scaler: util.Scaler): # Scaler pas directement utilisé ici mais bon pour la cohérence
+    """Vérifie les clics sur les boutons du menu pause. Retourne une action (string ou état) ou None."""
+    if not pause_menu_buttons_layout: # Si le layout n'a pas été initialisé
+        if cfg.DEBUG_MODE: print("UI WARNING: check_pause_menu_click - layout non initialisé.")
+        return None
+
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: # Clic gauche
+        for btn_info in pause_menu_buttons_layout:
+            if btn_info["rect"].collidepoint(mouse_pos):
+                if cfg.DEBUG_MODE: print(f"UI DEBUG: Pause menu action: {btn_info['action']}")
+                return btn_info["action"]
     return None
 
 game_over_buttons_layout = []
