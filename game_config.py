@@ -6,6 +6,7 @@ REF_WIDTH = 1920
 REF_HEIGHT = 1080
 GAME_TITLE = "The Last Stand: 1941"
 FPS = 60
+BASE_GRID_OFFSET_X = 0
 
 # --- Dimensions et Positions de Base (pour REF_WIDTH x REF_HEIGHT) ---
 BASE_TILE_SIZE = 90
