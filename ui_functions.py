@@ -108,10 +108,13 @@ def draw_lore_screen(screen, scaler: util.Scaler):
 
 # MODIFIED: Accepter scaler
 def draw_top_bar_ui(screen, game_state, scaler: util.Scaler):
-    if scaler.ui_top_bar_height <= 0: return # Failsafe
+    if scaler.ui_top_bar_height <= 0:
+        if cfg.DEBUG_MODE: print(f"DEBUG: Top bar not drawn, height <= 0: {scaler.ui_top_bar_height}")
+        return
 
     top_bar_rect = pygame.Rect(0, 0, scaler.actual_w, scaler.ui_top_bar_height)
     bg_color = getattr(cfg, 'COLOR_GREY_MEDIUM', (128, 128, 128))
+    if cfg.DEBUG_MODE: print(f"DEBUG: Drawing top bar. Rect: {top_bar_rect}, Color: {bg_color}, Scaler Actual W: {scaler.actual_w}, Scaler UI Top Bar H: {scaler.ui_top_bar_height}")
     pygame.draw.rect(screen, bg_color, top_bar_rect)
 
     # MODIFIED: Use scaler for padding and font size
@@ -260,10 +263,14 @@ def draw_build_menu_ui(screen, game_state, scaler: util.Scaler):
         initialize_build_menu_layout(game_state, scaler) # Passer scaler
 
     menu_height_runtime = scaler.ui_build_menu_height
-    if menu_height_runtime <= 0: return # Failsafe
+    if menu_height_runtime <= 0:
+        if cfg.DEBUG_MODE: print(f"DEBUG: Build menu not drawn, height <= 0: {menu_height_runtime}")
+        return
 
     menu_rect = pygame.Rect(0, scaler.actual_h - menu_height_runtime, scaler.actual_w, menu_height_runtime)
-    pygame.draw.rect(screen, cfg.COLOR_BUILD_MENU_BG, menu_rect)
+    bg_color = cfg.COLOR_BUILD_MENU_BG # Alias for clarity
+    if cfg.DEBUG_MODE: print(f"DEBUG: Drawing build menu. Rect: {menu_rect}, Color: {bg_color}, Scaler Actual H: {scaler.actual_h}, Menu Height Runtime: {menu_height_runtime}")
+    pygame.draw.rect(screen, bg_color, menu_rect)
     pygame.draw.line(screen, cfg.COLOR_GRID_BORDER, menu_rect.topleft, menu_rect.topright, 2)
     
     mouse_x, mouse_y = pygame.mouse.get_pos()
