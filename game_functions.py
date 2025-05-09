@@ -9,7 +9,7 @@ import wave_definitions
 
 class GameState:
     """Classe pour encapsuler l'état global du jeu pour un accès facile."""
-    def __init__(self, scaler: util.Scaler): # Accepte et stocke le scaler
+    def __init__(self, scaler: util.Scaler): # Accepts and stores scaler
         self.scaler = scaler
         self.screen = None
         self.clock = None
@@ -39,20 +39,18 @@ class GameState:
         self.max_city_hp = cfg.INITIAL_CITY_HP
 
         # Grille et Construction
-        # UTILISER scaler pour obtenir les tailles runtime si nécessaire, mais ici ce sont des comptes de tuiles
         self.grid_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES
         self.grid_height_tiles = cfg.BASE_GRID_INITIAL_HEIGHT_TILES
         self.current_expansion_up_tiles = 0
         self.current_expansion_sideways_steps = 0
-        self.grid_initial_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES # MODIFIED: Use BASE constant
+        self.grid_initial_width_tiles = cfg.BASE_GRID_INITIAL_WIDTH_TILES 
 
-        # La grille stocke les objets ou None. Initialiser avec la taille de base.
         self.game_grid = [[None for _ in range(self.grid_width_tiles)] for _ in range(self.grid_height_tiles)]
         self.buildable_area_rect_pixels = pygame.Rect(0,0,0,0)
-        self.update_buildable_area_rect() # Appel important
+        self.update_buildable_area_rect() # Called after scaler is set
 
         self.selected_item_to_place_type = None
-        self.placement_preview_sprite = None # Stockera l'original non-scalé
+        self.placement_preview_sprite = None 
         self.is_placement_valid_preview = False
 
         # Listes d'objets actifs
@@ -79,84 +77,82 @@ class GameState:
 
 
     def get_next_expansion_cost(self, direction):
-        # Utiliser les constantes BASE de cfg
         cost = "Max"
         if direction == "up":
-            if self.current_expansion_up_tiles < cfg.BASE_GRID_MAX_EXPANSION_UP_TILES: # MODIFIED: Use BASE
+            if self.current_expansion_up_tiles < cfg.BASE_GRID_MAX_EXPANSION_UP_TILES: 
                 cost = int(cfg.BASE_EXPANSION_COST_UP * (cfg.EXPANSION_COST_INCREASE_FACTOR_UP ** self.current_expansion_up_tiles))
         elif direction == "side":
-            if self.current_expansion_sideways_steps < cfg.BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS: # MODIFIED: Use BASE
+            if self.current_expansion_sideways_steps < cfg.BASE_GRID_MAX_EXPANSION_SIDEWAYS_STEPS: 
                 cost = int(cfg.BASE_EXPANSION_COST_SIDE * (cfg.EXPANSION_COST_INCREASE_FACTOR_SIDE ** self.current_expansion_sideways_steps))
         return cost
 
     def init_new_game(self, screen, clock):
-        """Réinitialise l'état pour une nouvelle partie."""
-        # Le scaler est déjà dans self.scaler, pas besoin de le passer ici
-        self.__init__(self.scaler) # MODIFIED: Réinitialiser avec le scaler existant
+        self.__init__(self.scaler) # Re-initialize with the existing scaler
         self.screen = screen
         self.clock = clock
-        self.load_ui_icons() # load_ui_icons pourrait avoir besoin du scaler (mais charge originaux)
-        self.update_buildable_area_rect() # S'assurer que le rect est recalculé
+        self.load_ui_icons() # Loads original sprites
+        self.update_buildable_area_rect() # Crucial to set rect before placing foundations
 
-        # --- Placer les fondations initiales ---
-        initial_bottom_row = cfg.BASE_GRID_INITIAL_HEIGHT_TILES - 1 # MODIFIED: Use BASE
-        for c in range(cfg.BASE_GRID_INITIAL_WIDTH_TILES): # MODIFIED: Use BASE
+        # Place initial foundations
+        initial_bottom_row = cfg.BASE_GRID_INITIAL_HEIGHT_TILES - 1
+        for c in range(cfg.BASE_GRID_INITIAL_WIDTH_TILES):
             grid_r, grid_c = initial_bottom_row, c
             if 0 <= grid_r < self.grid_height_tiles and 0 <= grid_c < self.grid_width_tiles:
                  if self.game_grid[grid_r][grid_c] is None:
                      try:
-                         # Calculer pixel_pos avec le scaler
                          pixel_pos = util.convert_grid_to_pixels(
                              (grid_r, grid_c),
-                             (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y),
-                             self.scaler # MODIFIED: Passer le scaler
+                             (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y), # Use current rect's origin
+                             self.scaler
                          )
-                         # Passer pixel_pos, grid_pos ET scaler au constructeur
-                         foundation_obj = objects.Building("fundations", pixel_pos, (grid_r, grid_c), self.scaler) # MODIFIED: Passer scaler
+                         foundation_obj = objects.Building("fundations", pixel_pos, (grid_r, grid_c), self.scaler)
                          self.game_grid[grid_r][grid_c] = foundation_obj
                          self.buildings.append(foundation_obj)
                      except Exception as e:
-                         print(f"ERROR placing initial foundation at ({grid_r},{grid_c}): {e}")
+                         if cfg.DEBUG_MODE: print(f"ERROR placing initial foundation at ({grid_r},{grid_c}): {e}")
                  else:
-                     print(f"WARNING: Initial foundation spot ({grid_r},{grid_c}) was already occupied.")
+                     if cfg.DEBUG_MODE: print(f"WARNING: Initial foundation spot ({grid_r},{grid_c}) was already occupied.")
 
         self.set_time_for_first_wave()
         self.update_resource_production_consumption()
 
     def load_ui_icons(self):
-        # Le scaling des icônes se fait dans draw_top_bar_ui maintenant, charger juste l'original ici
         self.ui_icons['money'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_money.png")
         self.ui_icons['iron'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_iron.png")
-        self.ui_icons['energy'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_energy.png") # Assuming this was intended
+        self.ui_icons['energy'] = util.load_sprite(cfg.UI_SPRITE_PATH + "icon_energy.png") 
         self.ui_icons['heart_full'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_full.png")
         self.ui_icons['heart_empty'] = util.load_sprite(cfg.UI_SPRITE_PATH + "heart_empty.png")
 
 
     def update_buildable_area_rect(self):
-        tile_size = self.scaler.get_tile_size()
-        ui_menu_height_bottom = self.scaler.ui_build_menu_height # Hauteur du menu du bas
+        tile_size = self.scaler.tile_size # Use scaler
+        ui_menu_height_bottom = self.scaler.ui_build_menu_height # Use scaler
 
         current_grid_pixel_width = self.grid_width_tiles * tile_size
         current_grid_pixel_height = self.grid_height_tiles * tile_size
 
-        # Calcul pour que le BAS de la grille soit juste AU-DESSUS du menu du bas
+        # THIS IS THE KEY CALCULATION FOR Y OFFSET
+        # Anchors BOTTOM of grid to TOP of bottom UI menu
         dynamic_grid_offset_y = self.scaler.actual_h - ui_menu_height_bottom - current_grid_pixel_height
 
-        grid_offset_x_runtime = self.scaler.scale_value(cfg.BASE_GRID_OFFSET_X) # Devrait être 0
+        grid_offset_x_runtime = self.scaler.grid_offset_x # Use pre-calculated from scaler
 
         self.buildable_area_rect_pixels = pygame.Rect(
-            grid_offset_x_runtime,
+            grid_offset_x_runtime, # Should be 0
             dynamic_grid_offset_y,
             current_grid_pixel_width,
             current_grid_pixel_height
         )
-        if getattr(cfg, 'DEBUG_MODE', False): # Optionnel pour le debug
-            print(f"DEBUG GS: Buildable Area Y: {dynamic_grid_offset_y}, H: {current_grid_pixel_height}, Bottom: {dynamic_grid_offset_y + current_grid_pixel_height}")
-            print(f"DEBUG GS: Bottom UI Top Y: {self.scaler.actual_h - ui_menu_height_bottom}")
+        if cfg.DEBUG_MODE:
+             print(f"GameState DEBUG: Grid Rect: {self.buildable_area_rect_pixels}")
+             print(f"  Grid Offset Y: {dynamic_grid_offset_y}, Grid Pixel H: {current_grid_pixel_height}")
+             print(f"  Screen H: {self.scaler.actual_h}, Bottom UI H: {ui_menu_height_bottom}")
+             print(f"  Calculated Grid Bottom: {dynamic_grid_offset_y + current_grid_pixel_height}")
+             print(f"  Top of Bottom UI: {self.scaler.actual_h - ui_menu_height_bottom}")
+
 
     def get_reinforced_row_index(self):
-        """Retourne l'index de la rangée (depuis le haut, 0-based) qui contient les fondations renforcées."""
-        return self.current_expansion_up_tiles + (cfg.BASE_GRID_INITIAL_HEIGHT_TILES - 1) # MODIFIED: Use BASE
+        return self.current_expansion_up_tiles + (cfg.BASE_GRID_INITIAL_HEIGHT_TILES - 1)
 
 
     def set_time_for_first_wave(self):
@@ -165,7 +161,7 @@ class GameState:
 
     def toggle_pause(self):
         self.game_paused = not self.game_paused
-        print(f"Game Paused: {self.game_paused}")
+        if cfg.DEBUG_MODE: print(f"Game Paused: {self.game_paused}")
 
     def show_error_message(self, message, duration=2.5):
         self.last_error_message = message
@@ -205,7 +201,7 @@ class GameState:
                 self.enemies_in_wave_remaining = 0
                 if self.current_wave_number >= self.max_waves and self.max_waves > 0:
                     self.all_waves_completed = True
-                    print("TOUTES LES VAGUES TERMINÉES!")
+                    if cfg.DEBUG_MODE: print("TOUTES LES VAGUES TERMINÉES!")
                 else:
                     self.time_to_next_wave_seconds = cfg.WAVE_TIME_BETWEEN_WAVES_SEC
 
@@ -214,10 +210,10 @@ class GameState:
         if self.current_wave_number > self.max_waves and self.max_waves > 0:
             self.wave_in_progress = False
             self.all_waves_completed = True
-            print("Fin des vagues définies.")
+            if cfg.DEBUG_MODE: print("Fin des vagues définies.")
             return
 
-        print(f"Starting Wave {self.current_wave_number}")
+        if cfg.DEBUG_MODE: print(f"Starting Wave {self.current_wave_number}")
         self.wave_in_progress = True
         self.enemies_in_current_wave_to_spawn = list(self.all_wave_definitions.get(self.current_wave_number, []))
         self.enemies_in_wave_remaining = len(self.enemies_in_current_wave_to_spawn)
@@ -231,20 +227,16 @@ class GameState:
                  self.time_to_next_wave_seconds = cfg.WAVE_TIME_BETWEEN_WAVES_SEC
 
     def spawn_enemy(self, enemy_type_id, variant_data=None):
-        # Utiliser scaler pour déterminer les positions de référence scalées (spawn position is in REF coords)
-        # These are reference coordinates, Enemy constructor will scale them
-        min_y_ref = 50 # Example: 50px from top in reference resolution
-        max_y_ref = cfg.REF_HEIGHT - cfg.BASE_UI_BUILD_MENU_HEIGHT - 50 # Coords de référence
+        min_y_ref = 50 
+        max_y_ref = cfg.REF_HEIGHT - cfg.BASE_UI_BUILD_MENU_HEIGHT - 50 
         
-        # Ensure min_y_ref is less than max_y_ref before random.randint
         if min_y_ref >= max_y_ref:
-            spawn_y_ref = (cfg.REF_HEIGHT - cfg.BASE_UI_BUILD_MENU_HEIGHT) // 2 # Fallback to middle
+            spawn_y_ref = (cfg.REF_HEIGHT - cfg.BASE_UI_BUILD_MENU_HEIGHT) // 2 
         else:
             spawn_y_ref = random.randint(min_y_ref, max_y_ref)
         
-        spawn_x_ref = cfg.REF_WIDTH + 50 # Spawn off-screen to the right in reference resolution
+        spawn_x_ref = cfg.REF_WIDTH + 50 
 
-        # Le constructeur Enemy prendra le scaler et scalera la position
         new_enemy = objects.Enemy((spawn_x_ref, spawn_y_ref), enemy_type_id, variant_data, self.scaler)
         self.enemies.append(new_enemy)
 
@@ -253,16 +245,15 @@ class GameState:
         if self.game_over_flag or self.game_paused: return
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # Clic Gauche
-                # MODIFIED: Passer scaler à check_build_menu_click
+            if event.button == 1: 
                 clicked_ui_item_id = ui_functions.check_build_menu_click(self, mouse_pos_pixels, self.scaler)
                 if clicked_ui_item_id:
                     if clicked_ui_item_id.startswith("expand_"):
                         action_type = clicked_ui_item_id.split("_")[1]
                         self.try_expand_build_area(action_type)
                         self.selected_item_to_place_type = None
-                        self.placement_preview_sprite = None # Clear original preview
-                    else: # Sélection d'un item constructible
+                        self.placement_preview_sprite = None 
+                    else: 
                         self.selected_item_to_place_type = clicked_ui_item_id
                         item_stats = objects.get_item_stats(self.selected_item_to_place_type)
                         sprite_name_for_preview = None
@@ -279,22 +270,17 @@ class GameState:
                             sprite_name_for_preview = item_stats.get(cfg.STAT_TURRET_BASE_SPRITE_NAME)
 
                         if sprite_name_for_preview and path_prefix:
-                            # MODIFIED: charger l'original, le scaling se fait dans draw_placement_preview
                             preview_sprite_orig = util.load_sprite(path_prefix + sprite_name_for_preview)
-                            self.placement_preview_sprite = preview_sprite_orig # Stocker l'original non scalé
-                            if self.placement_preview_sprite:
-                                # Alpha setting might be better done in draw_placement_preview on a copy
-                                pass
-                            else: self.placement_preview_sprite = None # Ensure it's None if load fails
+                            self.placement_preview_sprite = preview_sprite_orig 
+                            if not self.placement_preview_sprite: self.placement_preview_sprite = None 
                         else: self.placement_preview_sprite = None
                     return
                 elif self.selected_item_to_place_type:
                     self.try_place_item_on_grid(mouse_pos_pixels)
-            elif event.button == 3: # Clic Droit
+            elif event.button == 3: 
                 self.selected_item_to_place_type = None
-                self.placement_preview_sprite = None # Clear original preview
+                self.placement_preview_sprite = None 
 
-        # MODIFIED: Check validity using selected_item_to_place_type, not preview sprite directly
         if self.selected_item_to_place_type:
             is_valid, _ = self.check_placement_validity(self.selected_item_to_place_type, mouse_pos_pixels)
             self.is_placement_valid_preview = is_valid
@@ -302,7 +288,6 @@ class GameState:
              self.is_placement_valid_preview = False
 
     def check_placement_validity(self, item_type, mouse_pixel_pos):
-        # MODIFIED: utiliser le scaler pour la conversion
         grid_r, grid_c = util.convert_pixels_to_grid(mouse_pixel_pos,
                                                     (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y),
                                                     self.scaler)
@@ -332,7 +317,7 @@ class GameState:
                 else: required_base_type = "'Fondation renforcée' ou autre 'Mineur' (en dessous)"
             else: required_base_type = "Case vide"
         else:
-             print(f"AVERTISSEMENT: Règle de placement inconnue pour {item_type}")
+             if cfg.DEBUG_MODE: print(f"AVERTISSEMENT: Règle de placement inconnue pour {item_type}")
              self.show_error_message(f"Type d'objet inconnu: {item_type}")
              return False, (grid_r, grid_c)
 
@@ -369,65 +354,60 @@ class GameState:
             self.money -= item_stats.get(cfg.STAT_COST_MONEY, 0)
             self.iron_stock -= item_stats.get(cfg.STAT_COST_IRON, 0)
 
-            # Calculer pixel_pos AVANT de créer l'objet
             pixel_pos = util.convert_grid_to_pixels(
                 (grid_r, grid_c),
                 (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y),
-                self.scaler # MODIFIED: Passer scaler
+                self.scaler
             )
 
             existing_item = self.game_grid[grid_r][grid_c]
             if existing_item and existing_item.type == "frame" and item_type != "frame":
                  if existing_item in self.buildings:
-                     existing_item.active = False
+                     existing_item.active = False # Mark for removal/deactivation
                      self.buildings.remove(existing_item)
 
             new_item = None
-            # Créer le nouvel item en passant le scaler
             if objects.is_turret_type(item_type):
-                new_item = objects.Turret(item_type, pixel_pos, (grid_r, grid_c), self.scaler) # MODIFIED
+                new_item = objects.Turret(item_type, pixel_pos, (grid_r, grid_c), self.scaler)
                 self.turrets.append(new_item)
             elif objects.is_building_type(item_type):
-                new_item = objects.Building(item_type, pixel_pos, (grid_r, grid_c), self.scaler) # MODIFIED
+                new_item = objects.Building(item_type, pixel_pos, (grid_r, grid_c), self.scaler)
                 self.buildings.append(new_item)
 
             if new_item:
                  self.game_grid[grid_r][grid_c] = new_item
-                 # Passer grid_r, grid_c ET scaler à update_sprite
-                 new_item.update_sprite_based_on_context(self.game_grid, grid_r, grid_c, self.scaler) # MODIFIED
+                 new_item.update_sprite_based_on_context(self.game_grid, grid_r, grid_c, self.scaler)
 
-                 # Update sprite des voisins
                  for dr_n, dc_n in [(0,1), (0,-1), (1,0), (-1,0)]:
                      nr, nc = grid_r + dr_n, grid_c + dc_n
                      if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles:
                           neighbor = self.game_grid[nr][nc]
                           if neighbor and hasattr(neighbor, 'update_sprite_based_on_context'):
-                              neighbor.update_sprite_based_on_context(self.game_grid, nr, nc, self.scaler) # MODIFIED
+                              neighbor.update_sprite_based_on_context(self.game_grid, nr, nc, self.scaler)
 
-                 # Update sprite du mineur en dessous (si on a placé un mineur)
                  if item_type == "miner" and grid_r + 1 < self.grid_height_tiles:
                      item_below = self.game_grid[grid_r + 1][grid_c]
                      if item_below and item_below.type == "miner":
-                         item_below.update_sprite_based_on_context(self.game_grid, grid_r + 1, grid_c, self.scaler) # MODIFIED
+                         item_below.update_sprite_based_on_context(self.game_grid, grid_r + 1, grid_c, self.scaler)
 
 
                  self.check_and_apply_adjacency_bonus(new_item, grid_r, grid_c)
-                 if new_item.type == "storage": # Re-check bonus for adjacent storages
+                 if new_item.type == "storage": 
                      for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
                          nr, nc = grid_r + dr, grid_c + dc
                          if 0 <= nr < self.grid_height_tiles and 0 <= nc < self.grid_width_tiles:
                               neighbor_item = self.game_grid[nr][nc]
                               if neighbor_item and neighbor_item.type == "storage":
-                                  self.check_and_apply_adjacency_bonus(neighbor_item, nr, nc) # Pass scaler if item needs it
+                                  self.check_and_apply_adjacency_bonus(neighbor_item, nr, nc)
 
                  self.update_resource_production_consumption()
-                 print(f"Placed {item_type} at ({grid_r},{grid_c})")
+                 if cfg.DEBUG_MODE: print(f"Placed {item_type} at ({grid_r},{grid_c})")
             else:
-                 print(f"ERREUR: Échec de création de l'objet de type {item_type}")
-                 self.money += item_stats.get(cfg.STAT_COST_MONEY, 0) # Refund
-                 self.iron_stock += item_stats.get(cfg.STAT_COST_IRON, 0) # Refund
+                 if cfg.DEBUG_MODE: print(f"ERREUR: Échec de création de l'objet de type {item_type}")
+                 self.money += item_stats.get(cfg.STAT_COST_MONEY, 0) 
+                 self.iron_stock += item_stats.get(cfg.STAT_COST_IRON, 0) 
         else:
-            print(f"Invalid placement attempt for {item_type} at ({grid_r},{grid_c})")
+            if cfg.DEBUG_MODE: print(f"Invalid placement attempt for {item_type} at ({grid_r},{grid_c})")
 
     def check_and_apply_adjacency_bonus(self, item, r, c):
         if not item or not hasattr(item, 'apply_adjacency_bonus_effect'): return
@@ -439,8 +419,6 @@ class GameState:
                    self.game_grid[nr][nc] and self.game_grid[nr][nc].type == "storage":
                     adjacent_similar_items_count +=1
             item.apply_adjacency_bonus_effect(adjacent_similar_items_count)
-            # If sprite changes based on bonus, pass scaler
-            # item.update_sprite_based_on_context(self.game_grid, r, c, self.scaler)
 
 
     def try_expand_build_area(self, direction):
@@ -466,7 +444,7 @@ class GameState:
                             item_obj.grid_pos = (item_obj.grid_pos[0] + 1, item_obj.grid_pos[1])
             elif direction == "side":
                 self.current_expansion_sideways_steps += 1
-                tiles_to_add = cfg.BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP # MODIFIED: Use BASE
+                tiles_to_add = cfg.BASE_GRID_EXPANSION_SIDEWAYS_TILES_PER_STEP 
                 for r_idx in range(self.grid_height_tiles):
                     self.game_grid[r_idx].extend([None for _ in range(tiles_to_add)])
                 self.grid_width_tiles += tiles_to_add
@@ -478,13 +456,13 @@ class GameState:
                       if item_obj:
                            item_obj.rect.topleft = util.convert_grid_to_pixels((r, c),
                                                                             (self.buildable_area_rect_pixels.x, self.buildable_area_rect_pixels.y),
-                                                                            self.scaler) # MODIFIED
+                                                                            self.scaler) 
                            if hasattr(item_obj, 'update_sprite_based_on_context'):
-                               item_obj.update_sprite_based_on_context(self.game_grid, r, c, self.scaler) # MODIFIED
+                               item_obj.update_sprite_based_on_context(self.game_grid, r, c, self.scaler) 
 
             self.update_resource_production_consumption()
             self.show_error_message("Zone de base étendue!")
-            print(f"Expanded grid to {self.grid_width_tiles}x{self.grid_height_tiles}")
+            if cfg.DEBUG_MODE: print(f"Expanded grid to {self.grid_width_tiles}x{self.grid_height_tiles}")
         else:
             self.show_error_message(f"Pas assez d'argent ({cost_expansion}$)")
 
@@ -496,20 +474,17 @@ class GameState:
         all_constructs = self.buildings + self.turrets
 
         for item in all_constructs:
-            # item.active here is its internal state, not global power state yet
             item_stats = objects.get_item_stats(item.type)
             total_electricity_produced += item_stats.get(cfg.STAT_POWER_PRODUCTION, 0)
             total_electricity_consumed += item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0)
             if isinstance(item, objects.Building):
-                total_iron_production_pm += item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0) # Potential if powered
+                # total_iron_production_pm += item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0) # This was an error, effective production is calculated below
                 if item.type == "storage":
                     total_iron_storage_increase += item_stats.get(cfg.STAT_IRON_STORAGE_INCREASE, 0)
                     if hasattr(item, 'current_adjacency_bonus_value'):
                          total_iron_storage_increase += item.current_adjacency_bonus_value
 
         is_globally_powered = total_electricity_produced >= total_electricity_consumed
-        # effective_electricity_produced = 0 # Not strictly needed to track this for GameState display
-        # effective_electricity_consumed = 0 # Not strictly needed
         effective_iron_production_pm = 0
 
         for item in all_constructs:
@@ -544,28 +519,27 @@ class GameState:
         
         power_available_overall = self.electricity_produced >= self.electricity_consumed
 
-        # Passer scaler aux updates des objets
         for turret in self.turrets:
-             turret.update(delta_time, self.enemies, power_available_overall, self, self.scaler) # MODIFIED
+             turret.update(delta_time, self.enemies, power_available_overall, self, self.scaler) 
         for building in self.buildings:
-            building.update(delta_time, self, self.scaler) # MODIFIED (Buildings might need scaler for animations etc)
+            building.update(delta_time, self, self.scaler) 
         for proj in self.projectiles:
-            proj.update(delta_time, self, self.scaler) # MODIFIED
+            proj.update(delta_time, self, self.scaler) 
         for enemy in self.enemies:
-            enemy.update(delta_time, self, self.scaler) # MODIFIED
-            base_line_x = self.buildable_area_rect_pixels.left # Already scaled
+            enemy.update(delta_time, self, self.scaler) 
+            base_line_x = self.buildable_area_rect_pixels.left 
             if enemy.rect.right < base_line_x:
                 self.city_take_damage(enemy.get_city_damage())
                 enemy.active = False
-                if self.city_hp > 0: print(f"Ville touchée! HP restants: {self.city_hp}")
+                if self.city_hp > 0 and cfg.DEBUG_MODE: print(f"Ville touchée! HP restants: {self.city_hp}")
         for effect in self.particle_effects:
-             effect.update(delta_time, self, self.scaler) # MODIFIED
+             effect.update(delta_time, self, self.scaler) 
 
         self.handle_collisions()
         self.cleanup_inactive_objects()
         if self.city_hp <= 0 and not self.game_over_flag:
             self.game_over_flag = True
-            print("GAME OVER - City HP reached 0")
+            if cfg.DEBUG_MODE: print("GAME OVER - City HP reached 0")
 
     def city_take_damage(self, amount):
         if self.game_over_flag or amount <= 0: return
@@ -578,9 +552,8 @@ class GameState:
 
         for proj in self.projectiles:
              if not proj.active: continue
-             # MODIFIED: Use scaler for screen boundaries
              if proj.rect.right < 0 or proj.rect.left > self.scaler.actual_w or \
-                proj.rect.bottom < 0 or proj.rect.top > self.scaler.actual_h + self.scaler.scale_value(100): # Allow some offscreen for mortar fall
+                proj.rect.bottom < 0 or proj.rect.top > self.scaler.actual_h + self.scaler.scale_value(100): 
                  projectiles_to_remove_after_loop.add(proj)
                  continue
 
@@ -592,7 +565,6 @@ class GameState:
 
                  if proj.rect.colliderect(enemy.hitbox):
                      enemy.take_damage(proj.damage)
-                     # proj.on_hit passes 'self' (GameState), which has the scaler if needed by trigger_aoe_damage
                      proj.on_hit(self)
 
                      if not is_mortar:
@@ -600,12 +572,12 @@ class GameState:
                          if proj.id not in enemies_hit_this_frame_by_projectile:
                              enemies_hit_this_frame_by_projectile[proj.id] = set()
                          enemies_hit_this_frame_by_projectile[proj.id].add(enemy.id)
-                         if not enemy.active: # if enemy died
+                         if not enemy.active: 
                             self.money += enemy.get_money_value()
                             self.score += enemy.get_score_value()
                             self.enemies_in_wave_remaining = max(0, self.enemies_in_wave_remaining - 1)
                          break
-                     elif not enemy.active: # if enemy died (relevant for mortar too)
+                     elif not enemy.active: 
                          self.money += enemy.get_money_value()
                          self.score += enemy.get_score_value()
                          self.enemies_in_wave_remaining = max(0, self.enemies_in_wave_remaining - 1)
@@ -614,33 +586,15 @@ class GameState:
              if proj_to_remove in self.projectiles:
                  proj_to_remove.active = False
 
-    def trigger_aoe_damage(self, center_pos, base_radius, damage): # base_radius is from projectile stats (already scaled there or needs scaling here)
-        # Assuming base_radius is a BASE value from projectile stats and needs scaling now
-        # If projectile.aoe_radius is already scaled in Projectile.__init__, then this scaling isn't needed here.
-        # The prompt says: "trigger_aoe_damage a besoin du scaler si radius est BASE"
-        # and for Projectile.__init__: self.aoe_radius = self.scaler.scale_value(self.stats.get(cfg.STAT_AOE_RADIUS_PIXELS, 0))
-        # So, base_radius is already scaled if it's proj.aoe_radius. Let's assume 'base_radius' here means it's already scaled.
-        scaled_radius = base_radius # If base_radius is already proj.aoe_radius which is scaled.
-        # If base_radius was meant to be cfg.SOME_BASE_AOE_RADIUS, then:
-        # scaled_radius = self.scaler.scale_value(base_radius)
-
-        if hasattr(objects, 'ParticleEffect') and "explosion_mortar" in cfg.EFFECT_SPRITE_PATH: # Check if path exists
-            try: # TODO: Replace "explosion_mortar" and path with proper config
-                # Assuming explosion frames are loaded elsewhere and passed to ParticleEffect
-                # For now, let's simulate what the prompt's ParticleEffect might expect if frames are pre-loaded
-                # This part needs alignment with how ParticleEffect loads/receives its frames.
-                # The prompt ParticleEffect __init__ takes animation_frames_list and scales them.
-                # This requires a way to get the unscaled frames list here.
-                # For now, let's assume the explosion animation is identified by a key.
-                # We would need a mechanism to get the list of unscaled surfaces for "explosion_mortar".
-                # This is a placeholder, actual implementation depends on asset loading for effects.
-                # explosion_frames_orig = util.load_animation_frames(cfg.EFFECT_SPRITE_PATH + "mortar_explosion_folder") # Fictional loader
-                # effect = objects.ParticleEffect(center_pos, explosion_frames_orig, 0.05, self.scaler)
-                # self.particle_effects.append(effect)
-                pass # Placeholder for particle effect instantiation.
-            except Exception as e:
-                print(f"Error creating mortar explosion particle effect: {e}")
-
+    def trigger_aoe_damage(self, center_pos, scaled_radius, damage): 
+        # scaled_radius is already scaled by Projectile using scaler
+        if hasattr(objects, 'ParticleEffect'):
+            # Particle effect instantiation logic would go here
+            # For example, using a predefined effect or dynamically creating one
+            # This part depends on how ParticleEffect is designed and how its assets are managed
+            # e.g. effect = objects.ParticleEffect(center_pos, "mortar_explosion", self.scaler)
+            # self.particle_effects.append(effect)
+            pass
 
         radius_sq = scaled_radius ** 2
         for enemy in self.enemies:
@@ -660,36 +614,33 @@ class GameState:
 
 
     def draw_game_world(self):
-        """Dessine tous les éléments du monde du jeu."""
-        background_color = getattr(cfg, 'COLOR_BACKGROUND', cfg.COLOR_BLACK) # COLOR_BACKGROUND is fine
+        background_color = getattr(cfg, 'COLOR_BACKGROUND', cfg.COLOR_MAGENTA) # Failsafe
         self.screen.fill(background_color)
-
-        # MODIFIER: Passer scaler à draw_base_grid
-        ui_functions.draw_base_grid(self.screen, self, self.scaler)
-
+        ui_functions.draw_base_grid(self.screen, self, self.scaler) # Pass scaler
+        
         all_game_objects = [obj for obj in (self.buildings + self.turrets + self.enemies + self.projectiles + self.particle_effects) if hasattr(obj, 'rect')]
         all_game_objects.sort(key=lambda obj: obj.rect.bottom)
 
         for obj in all_game_objects:
-            obj.draw(self.screen) # Object's draw method uses its own scaled sprite
-            if getattr(cfg, 'DEBUG_MODE', False):
+            obj.draw(self.screen) 
+            if cfg.DEBUG_MODE:
                  if isinstance(obj, objects.Enemy) and hasattr(obj, 'hitbox'):
                      util.draw_debug_rect(self.screen, obj.hitbox, cfg.COLOR_GREEN, 1)
                  elif isinstance(obj, objects.Projectile):
                      util.draw_debug_rect(self.screen, obj.rect, cfg.COLOR_YELLOW, 1)
+                 # Can add more debug drawing for buildings, turrets if needed
 
-        # MODIFIER: Passer scaler à draw_placement_preview
         ui_functions.draw_placement_preview(self.screen, self, self.scaler)
 
+
     def draw_game_ui_elements(self):
-        # MODIFIER: Passer scaler aux fonctions draw UI
-        ui_functions.draw_top_bar_ui(self.screen, self, self.scaler)
-        ui_functions.draw_build_menu_ui(self.screen, self, self.scaler)
+        ui_functions.draw_top_bar_ui(self.screen, self, self.scaler) 
+        ui_functions.draw_build_menu_ui(self.screen, self, self.scaler) 
         if self.last_error_message and self.error_message_timer > 0:
              ui_functions.draw_error_message(self.screen, self.last_error_message, self, self.scaler)
         if self.tutorial_message and self.tutorial_message_timer > 0:
             ui_functions.draw_tutorial_message(self.screen, self.tutorial_message, self, self.scaler)
         if self.game_paused:
-            ui_functions.draw_pause_screen(self.screen, self.scaler) # Assuming draw_pause_screen now exists in ui_functions
+            ui_functions.draw_pause_screen(self.screen, self.scaler) 
         if self.game_over_flag:
-            ui_functions.draw_game_over_screen(self.screen, self.score, self.scaler) # Assuming draw_game_over_screen now exists
+            ui_functions.draw_game_over_screen(self.screen, self.score, self.scaler)
