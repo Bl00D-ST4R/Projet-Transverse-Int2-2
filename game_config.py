@@ -210,6 +210,7 @@ BASE_PROJECTILE_OFFSCREEN_BUFFER = 100 # Buffer around usable area for projectil
 
 # Ennemis spécifiques
 STAT_HP_MAX = "max_hp"
+GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER = 0.5 # Exemple: réduit tous les sprites d'ennemis à 70% de
 STAT_MOVE_SPEED_PIXELS_SEC = "move_speed_pixels_sec"
 STAT_DAMAGE_TO_CITY = "damage_to_city_amount"
 STAT_SCORE_POINTS_VALUE = "score_points_value"
