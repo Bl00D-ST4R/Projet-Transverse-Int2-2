@@ -27,7 +27,7 @@ BUILDING_STATS = {
     },
     "miner": {
         cfg.STAT_COST_MONEY: cfg.MINER_COST_MONEY,
-        cfg.STAT_COST_IRON: cfg.MINER_COST_IRON,
+        # cfg.STAT_COST_IRON: cfg.MINER_COST_IRON, # Supprimé (ou mis à 0 dans game_config.py)
         cfg.STAT_POWER_CONSUMPTION: cfg.MINER_POWER_CONSUMPTION,
         cfg.STAT_IRON_PRODUCTION_PM: cfg.MINER_IRON_PRODUCTION_PM,
         cfg.STAT_SPRITE_VARIANTS_DICT: {
@@ -40,6 +40,7 @@ BUILDING_STATS = {
     },
     "storage": {
         cfg.STAT_COST_MONEY: cfg.STORAGE_COST_MONEY,
+        # No iron cost to build storage
         cfg.STAT_IRON_STORAGE_INCREASE: cfg.STORAGE_IRON_STORAGE_INCREASE,
         cfg.STAT_ADJACENCY_BONUS_VALUE: cfg.STORAGE_ADJACENCY_BONUS_VALUE,
         cfg.STAT_SPRITE_VARIANTS_DICT: {
@@ -86,18 +87,19 @@ TURRET_STATS = {
     "machine_gun_turret": {
         cfg.STAT_ID: "machine_gun_turret",
         cfg.STAT_COST_MONEY: cfg.MACHINE_GUN_COST_MONEY,
-        cfg.STAT_COST_IRON: cfg.MACHINE_GUN_COST_IRON,
+        cfg.STAT_IRON_COST_PER_SHOT: cfg.MACHINE_GUN_IRON_COST_PER_SHOT,
         cfg.STAT_POWER_CONSUMPTION: cfg.MACHINE_GUN_POWER_CONSUMPTION,
         cfg.STAT_RANGE_PIXELS: cfg.MACHINE_GUN_RANGE_PIXELS,
         cfg.STAT_FIRE_RATE_PER_SEC: cfg.MACHINE_GUN_FIRE_RATE_PER_SEC,
         cfg.STAT_PROJECTILE_TYPE_ID: "machine_gun_beam",
         cfg.STAT_TURRET_BASE_SPRITE_NAME: "turret_base_placeholder.png",
-        cfg.STAT_TURRET_GUN_SPRITE_NAME: "gun.png",
+        cfg.STAT_TURRET_GUN_SPRITE_NAME: cfg.MACHINE_GUN_SPRITE_HAS_AMMO,
+        cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME: cfg.MACHINE_GUN_SPRITE_NO_AMMO,
     },
     "mortar_turret": {
         cfg.STAT_ID: "mortar_turret",
         cfg.STAT_COST_MONEY: cfg.MORTAR_COST_MONEY,
-        cfg.STAT_COST_IRON: cfg.MORTAR_COST_IRON,
+        cfg.STAT_IRON_COST_PER_SHOT: cfg.MORTAR_IRON_COST_PER_SHOT,
         cfg.STAT_POWER_CONSUMPTION: cfg.MORTAR_POWER_CONSUMPTION,
         cfg.STAT_MIN_RANGE_PIXELS: cfg.MORTAR_MIN_RANGE_PIXELS,
         cfg.STAT_MAX_RANGE_PIXELS: cfg.MORTAR_MAX_RANGE_PIXELS,
@@ -105,70 +107,74 @@ TURRET_STATS = {
         cfg.STAT_PROJECTILE_TYPE_ID: "mortar_shell",
         cfg.STAT_PROJECTILE_LAUNCH_SPEED_PIXELS: cfg.MORTAR_PROJECTILE_LAUNCH_SPEED_PIXELS,
         cfg.STAT_TURRET_BASE_SPRITE_NAME: "turret_base_placeholder.png",
-        cfg.STAT_TURRET_GUN_SPRITE_NAME: "mortar.png",
+        cfg.STAT_TURRET_GUN_SPRITE_NAME: cfg.MORTAR_SPRITE_HAS_AMMO,
+        cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME: cfg.MORTAR_SPRITE_NO_AMMO,
     },
     "flamethrower_turret": {
         cfg.STAT_ID: "flamethrower_turret",
         cfg.STAT_COST_MONEY: cfg.FLAMETHROWER_COST_MONEY,
-        cfg.STAT_COST_IRON: cfg.FLAMETHROWER_COST_IRON,
+        cfg.STAT_IRON_COST_PER_SHOT: cfg.FLAMETHROWER_IRON_COST_PER_PARTICLE_BURST,
         cfg.STAT_POWER_CONSUMPTION: cfg.FLAMETHROWER_POWER_CONSUMPTION,
         cfg.STAT_RANGE_PIXELS: cfg.FLAMETHROWER_RANGE_PIXELS,
         cfg.STAT_FLAMETHROWER_DURATION_SEC: cfg.FLAMETHROWER_DURATION_SEC,
         cfg.STAT_FLAMETHROWER_COOLDOWN_SEC: cfg.FLAMETHROWER_COOLDOWN_SEC,
         cfg.STAT_PROJECTILE_TYPE_ID: "flame_particle",
         cfg.STAT_TURRET_BASE_SPRITE_NAME: "turret_base_placeholder.png",
-        cfg.STAT_FLAMETHROWER_CHARGE_SPRITE_NAME: "flame2.png",
+        cfg.STAT_FLAMETHROWER_CHARGE_SPRITE_NAME: cfg.FLAMETHROWER_SPRITE_HAS_AMMO,
         cfg.STAT_FLAMETHROWER_DISCHARGE_SPRITE_NAME: "flame.png",
+        cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME: cfg.FLAMETHROWER_SPRITE_NO_AMMO,
     },
     "sniper_turret": {
         cfg.STAT_ID: "sniper_turret",
         cfg.STAT_COST_MONEY: cfg.SNIPER_COST_MONEY,
-        cfg.STAT_COST_IRON: cfg.SNIPER_COST_IRON,
+        cfg.STAT_IRON_COST_PER_SHOT: cfg.SNIPER_IRON_COST_PER_SHOT,
         cfg.STAT_POWER_CONSUMPTION: cfg.SNIPER_POWER_CONSUMPTION,
         cfg.STAT_RANGE_PIXELS: cfg.SNIPER_RANGE_PIXELS,
         cfg.STAT_FIRE_RATE_PER_SEC: cfg.SNIPER_FIRE_RATE_PER_SEC,
         cfg.STAT_PROJECTILE_TYPE_ID: "sniper_bullet",
         cfg.STAT_TURRET_BASE_SPRITE_NAME: "turret_base_placeholder.png",
-        cfg.STAT_TURRET_GUN_SPRITE_NAME: "sniper.png",
+        cfg.STAT_TURRET_GUN_SPRITE_NAME: cfg.SNIPER_SPRITE_HAS_AMMO,
+        cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME: cfg.SNIPER_SPRITE_NO_AMMO,
+        cfg.STAT_TURRET_GUN_SPRITE_FIRING_NAME: cfg.SNIPER_SPRITE_FIRING_ANIM,
     }
 }
 
 PROJECTILE_STATS = {
     "bullet": {
         cfg.STAT_ID: "bullet",
-        cfg.STAT_DAMAGE_AMOUNT: 10,  # Placeholder, use specific projectile damages
+        cfg.STAT_DAMAGE_AMOUNT: 10,
         cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS: 600,
         cfg.STAT_SPRITE_DEFAULT_NAME: "bullet.png",
         cfg.STAT_PROJECTILE_LIFETIME_SEC: 3.0,
     },
     "mortar_shell": {
         cfg.STAT_ID: "mortar_shell",
-        cfg.STAT_DAMAGE_AMOUNT: 50,  # Valeurs spécifiques au mortier
-        cfg.STAT_AOE_RADIUS_PIXELS: 50,
+        cfg.STAT_DAMAGE_AMOUNT: cfg.MORTAR_SHELL_DAMAGE,
+        cfg.STAT_AOE_RADIUS_PIXELS: cfg.MORTAR_SHELL_AOE_RADIUS_PIXELS,
         cfg.STAT_SPRITE_DEFAULT_NAME: "mortar_shell.png",
-        cfg.STAT_PROJECTILE_LIFETIME_SEC: 7.0,
+        cfg.STAT_PROJECTILE_LIFETIME_SEC: cfg.MORTAR_SHELL_LIFETIME_SEC,
     },
     "sniper_bullet": {
         cfg.STAT_ID: "sniper_bullet",
-        cfg.STAT_DAMAGE_AMOUNT: 150,
-        cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS: 1000,
+        cfg.STAT_DAMAGE_AMOUNT: cfg.SNIPER_BULLET_DAMAGE,
+        cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS: cfg.SNIPER_BULLET_FLAT_SPEED_PIXELS,
         cfg.STAT_SPRITE_DEFAULT_NAME: "sniper_bullet_placeholder.png",
-        cfg.STAT_PROJECTILE_LIFETIME_SEC: 2.0,
+        cfg.STAT_PROJECTILE_LIFETIME_SEC: cfg.SNIPER_BULLET_LIFETIME_SEC,
     },
     "flame_particle": {
         cfg.STAT_ID: "flame_particle",
-        cfg.STAT_DAMAGE_AMOUNT: 5,
-        cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS: 100,
+        cfg.STAT_DAMAGE_AMOUNT: cfg.FLAME_PARTICLE_DAMAGE,
+        cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS: cfg.FLAME_PARTICLE_FLAT_SPEED_PIXELS,
         cfg.STAT_SPRITE_DEFAULT_NAME: "flame_particle_placeholder.png",
-        cfg.STAT_PROJECTILE_LIFETIME_SEC: 0.5,
-        cfg.STAT_AOE_RADIUS_PIXELS: 10,
+        cfg.STAT_PROJECTILE_LIFETIME_SEC: cfg.FLAME_PARTICLE_LIFETIME_SEC,
+        cfg.STAT_AOE_RADIUS_PIXELS: cfg.FLAME_PARTICLE_AOE_RADIUS_PIXELS,
     },
     "machine_gun_beam": {
         cfg.STAT_ID: "machine_gun_beam",
-        cfg.STAT_DAMAGE_AMOUNT: 3,
+        cfg.STAT_DAMAGE_AMOUNT: cfg.MACHINE_GUN_BEAM_DAMAGE_PER_SHOT,
         cfg.STAT_PROJECTILE_IS_BEAM: True,
         cfg.STAT_PROJECTILE_BEAM_COLOR: cfg.COLOR_YELLOW,
-        cfg.STAT_PROJECTILE_BEAM_DURATION_SEC: 0.07,
+        cfg.STAT_PROJECTILE_BEAM_DURATION_SEC: cfg.MACHINE_GUN_BEAM_DURATION_SEC,
     }
 }
 
@@ -195,14 +201,14 @@ class GameObject(pygame.sprite.Sprite):
         self.rect = pygame.Rect(0, 0, 0, 0)
         self.sprite = None
         self.original_sprite = None
-        self.scaler = None  # Sera défini par les sous-classes
+        self.scaler = None
 
     def draw(self, surface):
         if self.active and self.sprite:
             surface.blit(self.sprite, self.rect.topleft)
 
     def update(self, delta_time, game_state_ref, scaler: util.Scaler):
-        if self.scaler is None and scaler is not None:  # Lazy init du scaler si pas fait dans __init__
+        if self.scaler is None and scaler is not None:
             self.scaler = scaler
 
 
@@ -213,15 +219,15 @@ class Building(GameObject):
     def __init__(self, building_type, pixel_pos_topleft, grid_pos_tuple, scaler: util.Scaler):
         super().__init__()
         self.scaler = scaler
-        Building._id_counter += 1
+        Building._id_counter += 1;
         self.id = Building._id_counter
-        self.type = building_type
+        self.type = building_type;
         self.grid_pos = grid_pos_tuple
         self.stats = BUILDING_STATS.get(self.type, {})
-        self.is_reinforced_frame = False
+        self.is_reinforced_frame = False;
         self.is_turret_platform = False
         self.cost_money = self.stats.get(cfg.STAT_COST_MONEY, 0)
-        self.cost_iron = self.stats.get(cfg.STAT_COST_IRON, 0)  # Assurez-vous que cfg.STAT_COST_IRON est défini
+        self.cost_iron = self.stats.get(cfg.STAT_COST_IRON, 0)
         self.power_production = self.stats.get(cfg.STAT_POWER_PRODUCTION, 0)
         self.power_consumption = self.stats.get(cfg.STAT_POWER_CONSUMPTION, 0)
         self.iron_production_pm = self.stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0)
@@ -237,24 +243,23 @@ class Building(GameObject):
         default_sprite_name_from_stats = self.stats.get(cfg.STAT_SPRITE_DEFAULT_NAME)
         if self.type == "frame" and "default" in self.sprites_dict:
             self.original_sprite = self.sprites_dict["default"]
-        elif "single" in self.sprites_dict and self.sprites_dict["single"]:  # For miner, storage
+        elif "single" in self.sprites_dict and self.sprites_dict["single"]:
             self.original_sprite = self.sprites_dict["single"]
         elif default_sprite_name_from_stats:
             self.original_sprite = util.load_sprite(
                 os.path.join(cfg.BUILDING_SPRITE_PATH, default_sprite_name_from_stats))
         else:
-            self.original_sprite = None  # Fallback if no sprite defined
-
+            self.original_sprite = None
         if self.original_sprite:
             self.sprite = util.scale_sprite_to_tile(self.original_sprite, self.scaler)
         else:
             if cfg.DEBUG_MODE: print(
-                f"AVERTISSEMENT: Aucun sprite original trouvé pour {self.type}, création d'un placeholder.")
+                f"AVERTISSEMENT: Aucun sprite original trouvé pour {self.type}, création placeholder.")
             tile_size = self.scaler.get_tile_size()
-            self.sprite = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
-            self.sprite.fill(cfg.COLOR_MAGENTA + (180,))  # Magenta semi-transparent
+            self.sprite = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA);
+            self.sprite.fill(cfg.COLOR_MAGENTA + (180,))
         self.rect = self.sprite.get_rect(topleft=pixel_pos_topleft)
-        self.is_functional = True  # Par défaut, un bâtiment est fonctionnel (l'énergie le gèrera)
+        self.is_functional = True
 
     def set_as_reinforced_frame(self, is_reinforced: bool):
         if self.type == "frame": self.is_reinforced_frame = is_reinforced; self._update_frame_sprite()
@@ -269,18 +274,17 @@ class Building(GameObject):
             new_sprite_key = "turret_platform"
         elif self.is_reinforced_frame and "reinforced" in self.sprites_dict:
             new_sprite_key = "reinforced"
-
         sprite_to_use = self.sprites_dict.get(new_sprite_key)
         if sprite_to_use:
-            if self.original_sprite is not sprite_to_use:  # Only update if different
-                self.original_sprite = sprite_to_use
+            if self.original_sprite is not sprite_to_use:
+                self.original_sprite = sprite_to_use;
                 self.sprite = util.scale_sprite_to_tile(self.original_sprite, self.scaler)
         elif cfg.DEBUG_MODE:
             print(f"AVERTISSEMENT: Sprite pour frame state '{new_sprite_key}' non trouvé.")
 
     def update_sprite_based_on_context(self, game_grid_ref, grid_r, grid_c, scaler: util.Scaler):
         if self.type == "miner":
-            above_is_miner, below_is_miner = False, False
+            above_is_miner, below_is_miner = False, False;
             row, col = grid_r, grid_c
             if row > 0 and game_grid_ref[row - 1][col] and game_grid_ref[row - 1][
                 col].type == "miner": above_is_miner = True
@@ -293,14 +297,13 @@ class Building(GameObject):
                 chosen_sprite_key = "stacked_top"
             elif above_is_miner:
                 chosen_sprite_key = "stacked_bottom"
-
             if chosen_sprite_key in self.sprites_dict and self.original_sprite is not self.sprites_dict[
                 chosen_sprite_key]:
-                self.original_sprite = self.sprites_dict[chosen_sprite_key]
+                self.original_sprite = self.sprites_dict[chosen_sprite_key];
                 self.sprite = util.scale_sprite_to_tile(self.original_sprite, scaler)
 
-    def apply_adjacency_bonus_effect(self, adjacent_similar_items_count):
-        if self.type == "storage" and self.adjacency_bonus_per_unit > 0: self.current_adjacency_bonus_value = adjacent_similar_items_count * self.adjacency_bonus_per_unit
+    def apply_adjacency_bonus_effect(self, adj_count):
+        if self.type == "storage" and self.adjacency_bonus_per_unit > 0: self.current_adjacency_bonus_value = adj_count * self.adjacency_bonus_per_unit
 
     def set_active_state(self, is_powered):
         self.is_functional = is_powered
@@ -316,9 +319,9 @@ class Turret(GameObject):
     def __init__(self, turret_type, pixel_pos_center, grid_pos_tuple, scaler: util.Scaler):
         super().__init__()
         self.scaler = scaler
-        Turret._id_counter += 1
+        Turret._id_counter += 1;
         self.id = Turret._id_counter
-        self.type = turret_type
+        self.type = turret_type;
         self.grid_pos = grid_pos_tuple
         self.stats = TURRET_STATS.get(self.type, {})
 
@@ -338,12 +341,20 @@ class Turret(GameObject):
         self.projectile_initial_speed = self.scaler.scale_value(
             self.stats.get(cfg.STAT_PROJECTILE_LAUNCH_SPEED_PIXELS, 0))
 
-        base_sprite_name = self.stats.get(cfg.STAT_TURRET_BASE_SPRITE_NAME, "placeholder.png")
+        self.iron_cost_per_shot = self.stats.get(cfg.STAT_IRON_COST_PER_SHOT, 0)
+        self.has_sufficient_iron = True
+        self.original_gun_sprite_no_ammo = None
+        self.original_gun_sprite_firing = None
+        self.is_firing_animation = False
+        self.firing_animation_timer = 0.0
+        self.firing_animation_duration = 0.2
+
+        base_sprite_name = self.stats.get(cfg.STAT_TURRET_BASE_SPRITE_NAME, "turret_base_placeholder.png")
         self.original_turret_base_sprite = util.load_sprite(os.path.join(cfg.TURRET_SPRITE_PATH, base_sprite_name))
 
         self.is_flamethrower = (self.type == "flamethrower_turret")
-        self.flame_duration_timer = 0.0
-        self.flame_cooldown_timer = 0.0
+        self.flame_duration_timer = 0.0;
+        self.flame_cooldown_timer = 0.0;
         self.is_flaming_active = False
         self.original_flame_charge_sprite, self.original_flame_discharge_sprite = None, None
         self.original_gun_sprite = None
@@ -357,34 +368,63 @@ class Turret(GameObject):
                 os.path.join(cfg.TURRET_SPRITE_PATH, charge_name))
             if discharge_name: self.original_flame_discharge_sprite = util.load_sprite(
                 os.path.join(cfg.TURRET_SPRITE_PATH, discharge_name))
+
+            no_ammo_sprite_name = self.stats.get(cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME)
+            if no_ammo_sprite_name:
+                self.original_gun_sprite_no_ammo = util.load_sprite(
+                    os.path.join(cfg.TURRET_SPRITE_PATH, no_ammo_sprite_name))
             self.original_gun_sprite = self.original_flame_charge_sprite
         else:
-            gun_name = self.stats.get(cfg.STAT_TURRET_GUN_SPRITE_NAME)
-            if gun_name:
-                self.original_gun_sprite = util.load_sprite(os.path.join(cfg.TURRET_SPRITE_PATH, gun_name))
-            elif cfg.DEBUG_MODE:
-                print(f"AVERTISSEMENT: Pas de STAT_TURRET_GUN_SPRITE_NAME pour {self.type}")
+            gun_sprite_name = self.stats.get(cfg.STAT_TURRET_GUN_SPRITE_NAME)
+            if gun_sprite_name:
+                self.original_gun_sprite = util.load_sprite(os.path.join(cfg.TURRET_SPRITE_PATH, gun_sprite_name))
+
+            no_ammo_sprite_name = self.stats.get(cfg.STAT_TURRET_GUN_SPRITE_NO_AMMO_NAME)
+            if no_ammo_sprite_name:
+                self.original_gun_sprite_no_ammo = util.load_sprite(
+                    os.path.join(cfg.TURRET_SPRITE_PATH, no_ammo_sprite_name))
+
+            if self.type == "sniper_turret":
+                firing_sprite_name = self.stats.get(cfg.STAT_TURRET_GUN_SPRITE_FIRING_NAME)
+                if firing_sprite_name:
+                    self.original_gun_sprite_firing = util.load_sprite(
+                        os.path.join(cfg.TURRET_SPRITE_PATH, firing_sprite_name))
+
+        current_initial_gun_sprite = self.original_gun_sprite
+        if not current_initial_gun_sprite:
+            current_initial_gun_sprite = self.original_gun_sprite_no_ammo
 
         if self.original_turret_base_sprite:
-            s_w, s_h = int(self.scaler.tile_size * 0.8), int(self.scaler.tile_size * 0.8)
-            self.turret_base_sprite_scaled = util.scale_sprite_to_size(self.original_turret_base_sprite, s_w, s_h)
+            scaled_base_w = int(self.scaler.tile_size * 0.8)
+            scaled_base_h = int(self.scaler.tile_size * 0.8)
+            self.turret_base_sprite_scaled = util.scale_sprite_to_size(self.original_turret_base_sprite, scaled_base_w,
+                                                                       scaled_base_h)
         else:
             s = int(self.scaler.tile_size * 0.8)
             self.turret_base_sprite_scaled = pygame.Surface((s, s), pygame.SRCALPHA);
             self.turret_base_sprite_scaled.fill(cfg.COLOR_CYAN + (180,))
 
         self.gun_sprite_scaled_original = None
-        if self.original_gun_sprite:
-            g_w, g_h = self.original_gun_sprite.get_size()
-            t_h_f = 0.8 if self.is_flamethrower else 0.5
-            t_g_h = self.scaler.tile_size * t_h_f
-            s_f = t_g_h / g_h if g_h > 0 else 1.0
-            t_g_w = g_w * s_f
-            self.gun_sprite_scaled_original = util.scale_sprite_to_size(self.original_gun_sprite, int(max(1, t_g_w)),
-                                                                        int(max(1, t_g_h)))
+        if current_initial_gun_sprite:
+            gun_orig_w, gun_orig_h = current_initial_gun_sprite.get_size()
+
+            if self.type in ["machine_gun_turret", "mortar_turret", "sniper_turret"]:
+                target_gun_h_factor = 0.8
+            elif self.is_flamethrower:
+                target_gun_h_factor = 0.8
+            else:
+                target_gun_h_factor = 0.5
+
+            target_gun_h = self.scaler.tile_size * target_gun_h_factor
+            scale_factor = target_gun_h / gun_orig_h if gun_orig_h > 0 else 1.0
+            target_gun_w = gun_orig_w * scale_factor
+            self.gun_sprite_scaled_original = util.scale_sprite_to_size(current_initial_gun_sprite,
+                                                                        int(max(1, target_gun_w)),
+                                                                        int(max(1, target_gun_h)))
 
         if not self.gun_sprite_scaled_original:
-            if cfg.DEBUG_MODE: print(f"AVERTISSEMENT: Echec chargement/scaling canon pour {self.type}. Fallback.")
+            if cfg.DEBUG_MODE: print(
+                f"AVERTISSEMENT: Echec chargement/scaling canon initial pour {self.type}. Fallback.")
             fb_w, fb_h = int(self.scaler.tile_size * 0.6), int(self.scaler.tile_size * 0.3)
             self.gun_sprite_scaled_original = pygame.Surface((fb_w, fb_h), pygame.SRCALPHA);
             self.gun_sprite_scaled_original.fill(cfg.COLOR_GREEN + (180,))
@@ -393,89 +433,146 @@ class Turret(GameObject):
         self.rect = self.turret_base_sprite_scaled.get_rect(center=pixel_pos_center)
 
         if self.gun_sprite_scaled_original:
-            p_x_f = 0.5 if self.is_flamethrower else 0.25
-            self.gun_pivot_offset_in_gun_sprite = (
-            self.gun_sprite_scaled_original.get_width() * p_x_f, self.gun_sprite_scaled_original.get_height() // 2)
+            self.gun_pivot_offset_in_gun_sprite = (self.gun_sprite_scaled_original.get_width() // 2,
+                                                   self.gun_sprite_scaled_original.get_height() // 2)
         else:
             self.gun_pivot_offset_in_gun_sprite = (0, 0)
 
-        self.target_enemy = None
-        self.current_angle_deg = 0
+        self.target_enemy = None;
+        self.current_angle_deg = 0;
         self.is_functional = True
+        self._update_gun_sprite_visuals()
+
+    def find_target(self, enemies_list):
+        self.target_enemy = None
+        closest_dist_sq = float('inf')
+        turret_center_x, turret_center_y = self.rect.centerx, self.rect.centery
+
+        for enemy in enemies_list:
+            if not enemy.active or not hasattr(enemy, 'rect'):
+                continue
+
+            dist_sq = (enemy.rect.centerx - turret_center_x) ** 2 + (enemy.rect.centery - turret_center_y) ** 2
+
+            target_in_range = False
+            if self.type == "mortar_turret":
+                if self.min_range ** 2 <= dist_sq <= self.max_range ** 2:
+                    target_in_range = True
+            else:
+                if dist_sq <= self.range ** 2:
+                    target_in_range = True
+
+            if target_in_range and dist_sq < closest_dist_sq:
+                closest_dist_sq = dist_sq
+                self.target_enemy = enemy
 
     def _update_gun_sprite_visuals(self):
-        # S'assure que original_gun_sprite est le bon (pour lance-flamme)
-        if self.is_flamethrower:
-            if self.is_flaming_active and self.original_flame_discharge_sprite:
-                self.original_gun_sprite = self.original_flame_discharge_sprite
-            elif not self.is_flaming_active and self.original_flame_charge_sprite:
-                self.original_gun_sprite = self.original_flame_charge_sprite
-            # else: conserve le précédent original_gun_sprite si un des sprites spécifiques est None
-
-        if self.original_gun_sprite:
-            g_w, g_h = self.original_gun_sprite.get_size()
-            t_h_f = 0.8 if self.is_flamethrower else 0.5
-            t_g_h = self.scaler.tile_size * t_h_f
-            s_f = t_g_h / g_h if g_h > 0 else 1.0
-            t_g_w = g_w * s_f
-            self.gun_sprite_scaled_original = util.scale_sprite_to_size(self.original_gun_sprite, int(max(1, t_g_w)),
-                                                                        int(max(1, t_g_h)))
+        current_original_gun_to_use = None
+        if self.is_firing_animation:
+            current_original_gun_to_use = self.original_gun_sprite_firing
+        elif self.is_flamethrower:
+            if self.is_flaming_active:
+                current_original_gun_to_use = self.original_flame_discharge_sprite
+            elif self.has_sufficient_iron:
+                current_original_gun_to_use = self.original_flame_charge_sprite
+            else:
+                current_original_gun_to_use = self.original_gun_sprite_no_ammo
         else:
-            if cfg.DEBUG_MODE: print(
-                f"AVERTISSEMENT: original_gun_sprite est None dans _update_gun_sprite_visuals pour {self.type}")
-            fb_w, fb_h = int(self.scaler.tile_size * 0.6), int(self.scaler.tile_size * 0.3)
-            self.gun_sprite_scaled_original = pygame.Surface((fb_w, fb_h), pygame.SRCALPHA);
-            self.gun_sprite_scaled_original.fill(cfg.COLOR_GREEN + (180,))
+            if self.has_sufficient_iron:
+                current_original_gun_to_use = self.original_gun_sprite
+            else:
+                current_original_gun_to_use = self.original_gun_sprite_no_ammo
+
+        if not current_original_gun_to_use:
+            current_original_gun_to_use = self.original_gun_sprite
+        if not current_original_gun_to_use:
+            current_original_gun_to_use = self.original_gun_sprite_no_ammo
+
+        rescale_needed = (self.original_gun_sprite != current_original_gun_to_use) or \
+                         (self.gun_sprite_scaled_original is None) or \
+                         (self.original_gun_sprite is None and current_original_gun_to_use is not None)
+
+        if rescale_needed:
+            self.original_gun_sprite = current_original_gun_to_use
+
+            if self.original_gun_sprite:
+                gun_orig_w, gun_orig_h = self.original_gun_sprite.get_size()
+
+                if self.type in ["machine_gun_turret", "mortar_turret", "sniper_turret"]:
+                    target_gun_h_factor = 0.8
+                elif self.is_flamethrower:
+                    target_gun_h_factor = 0.8
+                else:
+                    target_gun_h_factor = 0.5
+
+                target_gun_h = self.scaler.tile_size * target_gun_h_factor
+                scale_factor = target_gun_h / gun_orig_h if gun_orig_h > 0 else 1.0
+                target_gun_w = gun_orig_w * scale_factor
+                self.gun_sprite_scaled_original = util.scale_sprite_to_size(self.original_gun_sprite,
+                                                                            int(max(1, target_gun_w)),
+                                                                            int(max(1, target_gun_h)))
+                self.gun_pivot_offset_in_gun_sprite = (self.gun_sprite_scaled_original.get_width() // 2,
+                                                       self.gun_sprite_scaled_original.get_height() // 2)
+            else:
+                if cfg.DEBUG_MODE: print(
+                    f"AVERTISSEMENT: current_original_gun_to_use est None dans _update_gun_sprite_visuals pour {self.type}")
+                fb_w, fb_h = int(self.scaler.tile_size * 0.6), int(self.scaler.tile_size * 0.3)
+                self.gun_sprite_scaled_original = pygame.Surface((fb_w, fb_h), pygame.SRCALPHA);
+                self.gun_sprite_scaled_original.fill(cfg.COLOR_GREEN + (180,))
+                self.gun_pivot_offset_in_gun_sprite = (
+                self.gun_sprite_scaled_original.get_width() // 2, self.gun_sprite_scaled_original.get_height() // 2)
 
         if self.gun_sprite_scaled_original:
             self.gun_sprite_rotated = pygame.transform.rotate(self.gun_sprite_scaled_original, self.current_angle_deg)
         else:
             self.gun_sprite_rotated = None
+            if cfg.DEBUG_MODE: print(f"ERREUR: gun_sprite_scaled_original est None après update pour {self.type}")
 
-    def find_target(self, enemies_list):
-        self.target_enemy = None;
-        closest_dist_sq = float('inf')
-        turret_center_x, turret_center_y = self.rect.centerx, self.rect.centery
-        for enemy in enemies_list:
-            if not enemy.active or not hasattr(enemy, 'rect'): continue
-            dist_sq = (enemy.rect.centerx - turret_center_x) ** 2 + (enemy.rect.centery - turret_center_y) ** 2
-            target_in_range = False
-            if self.type == "mortar_turret":
-                if self.min_range ** 2 <= dist_sq <= self.max_range ** 2: target_in_range = True
-            else:
-                if dist_sq <= self.range ** 2: target_in_range = True
-            if target_in_range and dist_sq < closest_dist_sq:
-                closest_dist_sq = dist_sq;
-                self.target_enemy = enemy
 
     def update(self, delta_time, enemies_list, is_powered_globally, game_state_ref, scaler: util.Scaler):
         super().update(delta_time, game_state_ref, scaler)
         self.set_active_state(is_powered_globally)
+
+        current_iron_check = (game_state_ref.iron_stock >= self.iron_cost_per_shot) or (self.iron_cost_per_shot == 0)
+        visual_update_needed = False
+        if self.has_sufficient_iron != current_iron_check:
+            self.has_sufficient_iron = current_iron_check;
+            visual_update_needed = True
+
+        if self.is_firing_animation:
+            self.firing_animation_timer -= delta_time
+            if self.firing_animation_timer <= 0:
+                self.is_firing_animation = False;
+                visual_update_needed = True
+
+        if visual_update_needed and not (
+                self.is_flamethrower and self.is_flaming_active) and not self.is_firing_animation:
+            self._update_gun_sprite_visuals()
+
         if not self.active or not self.is_functional:
-            self.target_enemy = None
-            if self.is_flamethrower and self.is_flaming_active:  # Si le lance-flamme tirait et perd le courant
+            if self.is_flamethrower and self.is_flaming_active:
                 self.is_flaming_active = False;
                 self.flame_cooldown_timer = self.flame_cooldown_max
-                self._update_gun_sprite_visuals()  # Pour revenir au sprite "chargé"
+                self._update_gun_sprite_visuals()
             return
 
+        old_angle = self.current_angle_deg
         if not self.target_enemy or not self.target_enemy.active or not hasattr(self.target_enemy, 'rect'):
             self.find_target(enemies_list)
 
         aim_this_frame = False
         if self.target_enemy and hasattr(self.target_enemy, 'rect'):
             aim_this_frame = True
-            dx = self.target_enemy.rect.centerx - self.rect.centerx
+            dx = self.target_enemy.rect.centerx - self.rect.centerx;
             dy = self.target_enemy.rect.centery - self.rect.centery
             self.current_angle_deg = math.degrees(math.atan2(-dy, dx))
-        elif self.is_flamethrower and self.is_flaming_active:  # Le lance-flamme continue de tirer dans la dernière direction
-            aim_this_frame = True  # Il a déjà un angle, on le met à jour pour la rotation du sprite
+        elif self.is_flamethrower and self.is_flaming_active:
+            aim_this_frame = True
 
-        if aim_this_frame and self.gun_sprite_scaled_original:
-            self.gun_sprite_rotated = pygame.transform.rotate(self.gun_sprite_scaled_original, self.current_angle_deg)
-        elif not self.is_flamethrower:  # Si pas un lance-flamme et pas de cible valide pour viser
-            self.target_enemy = None  # Effacer la cible
-            return  # Pas de tir si pas de cible pour les tourelles standard
+        if aim_this_frame and not self.is_firing_animation:
+            if self.current_angle_deg != old_angle or self.gun_sprite_rotated is None: self._update_gun_sprite_visuals()
+
+        if not self.has_sufficient_iron and not (self.is_flamethrower and self.is_flaming_active): return
 
         if self.is_flamethrower:
             if self.is_flaming_active:
@@ -483,36 +580,51 @@ class Turret(GameObject):
                 if self.flame_duration_timer <= 0:
                     self.is_flaming_active = False;
                     self.flame_cooldown_timer = self.flame_cooldown_max
-                    self._update_gun_sprite_visuals()  # Sprite "chargé"
+                    self._update_gun_sprite_visuals()
                 else:
                     self.current_cooldown -= delta_time
-                    if self.current_cooldown <= 0:
-                        self.shoot(game_state_ref);
-                        self.current_cooldown = 0.1
+                    if self.current_cooldown <= 0: self.shoot(game_state_ref); self.current_cooldown = 0.1
             else:
                 self.flame_cooldown_timer -= delta_time
-                if self.flame_cooldown_timer <= 0 and self.target_enemy:  # Prêt et a une cible
+                if self.flame_cooldown_timer <= 0 and self.target_enemy and self.has_sufficient_iron:
                     self.is_flaming_active = True;
                     self.flame_duration_timer = self.flame_duration_max
-                    self._update_gun_sprite_visuals()  # Sprite "déchargé/en tir"
+                    self._update_gun_sprite_visuals();
                     self.current_cooldown = 0
         else:
             self.current_cooldown -= delta_time
-            if self.current_cooldown <= 0 and self.target_enemy:
+            if self.current_cooldown <= 0 and self.target_enemy and self.has_sufficient_iron:
                 self.shoot(game_state_ref);
                 self.current_cooldown = self.cooldown_time_seconds
+                if self.type == "sniper_turret" and self.original_gun_sprite_firing:
+                    self.is_firing_animation = True;
+                    self.firing_animation_timer = self.firing_animation_duration
+                    self._update_gun_sprite_visuals()
+
+        new_has_iron_after_shot = (game_state_ref.iron_stock >= self.iron_cost_per_shot) or (
+                self.iron_cost_per_shot == 0)
+        if self.has_sufficient_iron and not new_has_iron_after_shot and not self.is_firing_animation:
+            self.has_sufficient_iron = False;
+            self._update_gun_sprite_visuals()
 
     def shoot(self, game_state_ref):
         if not self.projectile_type: return
         if not self.target_enemy and not (self.is_flamethrower and self.is_flaming_active): return
 
+        if self.iron_cost_per_shot > 0:
+            if game_state_ref.iron_stock < self.iron_cost_per_shot:
+                self.has_sufficient_iron = False
+                if cfg.DEBUG_MODE: print(f"Tourelle {self.type} à court de fer pour tirer (vérification dans shoot).")
+                return
+            game_state_ref.iron_stock -= self.iron_cost_per_shot
+            self.has_sufficient_iron = (game_state_ref.iron_stock >= self.iron_cost_per_shot) or (
+                    self.iron_cost_per_shot == 0)
+
         pivot_screen_x, pivot_screen_y = self.rect.centerx, self.rect.centery
-        # Assurez-vous que gun_pivot_offset_in_gun_sprite et gun_sprite_scaled_original sont valides
         cannon_length_from_pivot = 0
         if self.gun_sprite_scaled_original and self.gun_pivot_offset_in_gun_sprite:
             cannon_length_from_pivot = self.gun_sprite_scaled_original.get_width() - \
                                        self.gun_pivot_offset_in_gun_sprite[0]
-
         proj_origin_x = pivot_screen_x + math.cos(math.radians(self.current_angle_deg)) * cannon_length_from_pivot
         proj_origin_y = pivot_screen_y - math.sin(math.radians(self.current_angle_deg)) * cannon_length_from_pivot
         proj_origin = (proj_origin_x, proj_origin_y)
@@ -526,7 +638,7 @@ class Turret(GameObject):
                 game_state_ref.projectiles.append(new_proj)
             return
 
-        if not self.target_enemy or not self.target_enemy.active: return  # Cible requise pour autres tirs
+        if not self.target_enemy or not self.target_enemy.active: return
 
         if self.type == "mortar_turret":
             fire_solution = calculate_mortar_fire_solution(self.rect.center, self.target_enemy.rect.center,
@@ -546,7 +658,7 @@ class Turret(GameObject):
                 dmg = PROJECTILE_STATS["machine_gun_beam"].get(cfg.STAT_DAMAGE_AMOUNT, 0)
                 self.target_enemy.take_damage(dmg)
                 if not self.target_enemy.active and hasattr(game_state_ref, 'money'):
-                    game_state_ref.money += self.target_enemy.get_money_value()
+                    game_state_ref.money += self.target_enemy.get_money_value();
                     game_state_ref.score += self.target_enemy.get_score_value()
                 beam_proj = Projectile(self.projectile_type, proj_origin, self.current_angle_deg, self.scaler,
                                        target_pos_for_beam=self.target_enemy.rect.center)
@@ -559,7 +671,8 @@ class Turret(GameObject):
         self.is_functional = is_powered
 
     def draw(self, surface):
-        if not self.active: return
+        if not self.active:
+            return
 
         if self.turret_base_sprite_scaled:
             surface.blit(self.turret_base_sprite_scaled, self.rect.topleft)
@@ -568,43 +681,48 @@ class Turret(GameObject):
 
         if self.gun_sprite_rotated and self.gun_sprite_scaled_original:
             pivot_screen_pos = self.rect.center
-            rotated_center_offset_x = self.gun_sprite_rotated.get_width() / 2
-            rotated_center_offset_y = self.gun_sprite_rotated.get_height() / 2
+
             pivot_in_scaled_orig_x, pivot_in_scaled_orig_y = self.gun_pivot_offset_in_gun_sprite
-            vec_pivot_to_center_scaled_orig_x = (
-                                                            self.gun_sprite_scaled_original.get_width() / 2) - pivot_in_scaled_orig_x
-            vec_pivot_to_center_scaled_orig_y = (
-                                                            self.gun_sprite_scaled_original.get_height() / 2) - pivot_in_scaled_orig_y
+
+            offset_pivot_from_center_x = pivot_in_scaled_orig_x - self.gun_sprite_scaled_original.get_width() / 2
+            offset_pivot_from_center_y = pivot_in_scaled_orig_y - self.gun_sprite_scaled_original.get_height() / 2
+
             angle_rad_math = -math.radians(self.current_angle_deg)
-            rotated_vec_x = vec_pivot_to_center_scaled_orig_x * math.cos(
-                angle_rad_math) - vec_pivot_to_center_scaled_orig_y * math.sin(angle_rad_math)
-            rotated_vec_y = vec_pivot_to_center_scaled_orig_x * math.sin(
-                angle_rad_math) + vec_pivot_to_center_scaled_orig_y * math.cos(angle_rad_math)
-            gun_topleft_x = pivot_screen_pos[0] - rotated_vec_x - rotated_center_offset_x
-            gun_topleft_y = pivot_screen_pos[1] - rotated_vec_y - rotated_center_offset_y
-            surface.blit(self.gun_sprite_rotated, (gun_topleft_x, gun_topleft_y))
 
-            if cfg.DEBUG_MODE:  # Store for debug drawing if needed
-                self.gun_final_draw_pos_topleft = (gun_topleft_x, gun_topleft_y)
+            rotated_offset_x = offset_pivot_from_center_x * math.cos(
+                angle_rad_math) - offset_pivot_from_center_y * math.sin(angle_rad_math)
+            rotated_offset_y = offset_pivot_from_center_x * math.sin(
+                angle_rad_math) + offset_pivot_from_center_y * math.cos(angle_rad_math)
 
+            rotated_sprite_center_x = pivot_screen_pos[0] - rotated_offset_x
+            rotated_sprite_center_y = pivot_screen_pos[1] - rotated_offset_y
+
+            gun_display_rect = self.gun_sprite_rotated.get_rect(
+                center=(rotated_sprite_center_x, rotated_sprite_center_y))
+
+            surface.blit(self.gun_sprite_rotated, gun_display_rect.topleft)
+
+            if cfg.DEBUG_MODE:
+                self.gun_final_draw_pos_topleft = gun_display_rect.topleft
         elif cfg.DEBUG_MODE:
             if self.gun_sprite_scaled_original:
-                placeholder_gun_rect = self.gun_sprite_scaled_original.get_rect(center=self.rect.center)
-                surface.blit(self.gun_sprite_scaled_original, placeholder_gun_rect.topleft)
-                pygame.draw.line(surface, cfg.COLOR_RED, self.rect.center, placeholder_gun_rect.center, 1)
+                temp_rotated_fallback = pygame.transform.rotate(self.gun_sprite_scaled_original,
+                                                                self.current_angle_deg)
+                fb_gun_rect = temp_rotated_fallback.get_rect(center=self.rect.center)
+                surface.blit(temp_rotated_fallback, fb_gun_rect.topleft)
             else:
-                placeholder_gun_rect = pygame.Rect(0, 0, self.scaler.tile_size * 0.5, self.scaler.tile_size * 0.2)
+                placeholder_gun_rect = pygame.Rect(0, 0, self.scaler.tile_size * 0.5, self.scaler.tile_size * 0.2);
                 placeholder_gun_rect.center = self.rect.center
                 pygame.draw.rect(surface, cfg.COLOR_MAGENTA, placeholder_gun_rect)
-            # print(f"AVERTISSEMENT: gun_sprite_rotated est None pour {self.type} lors du dessin.")
 
         if cfg.DEBUG_MODE:
             pygame.draw.circle(surface, cfg.COLOR_RED, self.rect.center, 3)
             if self.gun_sprite_rotated and hasattr(self, 'gun_final_draw_pos_topleft'):
-                debug_gun_rect = self.gun_sprite_rotated.get_rect(topleft=self.gun_final_draw_pos_topleft)
+                debug_gun_rect = self.gun_sprite_rotated.get_rect(topleft=self.gun_final_draw_pos_topleft);
                 pygame.draw.rect(surface, cfg.COLOR_YELLOW, debug_gun_rect, 1)
 
 
+# --- Projectiles ---
 class Projectile(GameObject):
     _id_counter = 0
 
@@ -616,31 +734,26 @@ class Projectile(GameObject):
         self.id = Projectile._id_counter
         self.type = projectile_type;
         self.stats = PROJECTILE_STATS.get(self.type, {})
-
         self.damage = self.stats.get(cfg.STAT_DAMAGE_AMOUNT, 0)
         self.speed = self.scaler.scale_value(self.stats.get(cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS, 0))
         self.aoe_radius = self.scaler.scale_value(self.stats.get(cfg.STAT_AOE_RADIUS_PIXELS, 0))
         self.lifetime_seconds = self.stats.get(cfg.STAT_PROJECTILE_LIFETIME_SEC, 5.0)
         self.gravity_scaled = self.scaler.gravity
-
         self.is_beam = self.stats.get(cfg.STAT_PROJECTILE_IS_BEAM, False)
         self.beam_color = self.stats.get(cfg.STAT_PROJECTILE_BEAM_COLOR, cfg.COLOR_YELLOW)
         self.beam_target_pos = target_pos_for_beam;
         self.origin_pos = origin_xy_pixels
-
         self.sprite = None;
         self.original_sprite = None;
         self.sprite_scaled_original = None
-
         if not self.is_beam:
             sprite_name = self.stats.get(cfg.STAT_SPRITE_DEFAULT_NAME, "placeholder.png")
             fallback_path = os.path.join(cfg.PROJECTILE_SPRITE_PATH, cfg.DEFAULT_BULLET_SPRITE_NAME)
             self.original_sprite = util.load_sprite(os.path.join(cfg.PROJECTILE_SPRITE_PATH, sprite_name),
                                                     specific_fallback_path=fallback_path)
-
             if self.original_sprite:
                 b_w, b_h = self.original_sprite.get_size()
-                t_h = self.scaler.tile_size * cfg.BASE_PROJECTILE_SPRITE_SCALE_FACTOR  # Use new config for scaling factor
+                t_h = self.scaler.tile_size * cfg.BASE_PROJECTILE_SPRITE_SCALE_FACTOR
                 s_f = t_h / b_h if b_h > 0 else 1
                 t_w = b_w * s_f
                 self.sprite_scaled_original = util.scale_sprite_to_size(self.original_sprite, int(max(1, t_w)),
@@ -649,7 +762,6 @@ class Projectile(GameObject):
                 fb_size_px = self.scaler.scale_value(cfg.BASE_PROJECTILE_FALLBACK_SIZE)
                 self.sprite_scaled_original = pygame.Surface((fb_size_px, fb_size_px), pygame.SRCALPHA);
                 self.sprite_scaled_original.fill(cfg.COLOR_MAGENTA + (180,))
-
         self.is_mortar_shell = (self.type == "mortar_shell")
         if self.is_mortar_shell:
             self.vx = initial_vx or 0;
@@ -660,7 +772,6 @@ class Projectile(GameObject):
             self.vx = self.speed * math.cos(self.angle_rad);
             self.vy_physics = self.speed * math.sin(self.angle_rad)
             self.sprite = pygame.transform.rotate(self.sprite_scaled_original, angle_deg)
-
         if self.sprite:
             self.rect = self.sprite.get_rect(center=origin_xy_pixels)
         elif self.is_beam:
@@ -675,26 +786,22 @@ class Projectile(GameObject):
         if not self.active: return
         self.lifetime_seconds -= delta_time
         if self.lifetime_seconds <= 0:
-            if self.is_mortar_shell and not self.has_impacted: self.on_hit(game_state_ref)  # Impact if lifetime ends
+            if self.is_mortar_shell and not self.has_impacted: self.on_hit(game_state_ref)
             self.active = False;
             return
-
         if self.is_beam:
             pass
         elif self.is_mortar_shell:
             self.rect.x += self.vx * delta_time;
             self.rect.y += -self.vy_physics * delta_time
             self.vy_physics -= self.gravity_scaled * delta_time
-            if self.sprite_scaled_original:  # Update sprite angle based on trajectory
-                angle_rad_traj = math.atan2(self.vy_physics, self.vx)  # Angle of velocity vector
-                self.sprite = pygame.transform.rotate(self.sprite_scaled_original,
-                                                      math.degrees(-angle_rad_traj))  # Negate for Pygame rotation
-        else:  # Standard projectiles
+            if self.sprite_scaled_original:
+                angle_rad_traj = math.atan2(self.vy_physics, self.vx)
+                self.sprite = pygame.transform.rotate(self.sprite_scaled_original, math.degrees(-angle_rad_traj))
+        else:
             self.rect.x += self.vx * delta_time;
             self.rect.y += -self.vy_physics * delta_time
-
         off_buf = self.scaler.scale_value(cfg.BASE_PROJECTILE_OFFSCREEN_BUFFER)
-        # Check against actual screen dimensions, not just usable area, if projectiles can fly into margins
         screen_bounds_with_buffer = pygame.Rect(-off_buf, -off_buf, self.scaler.actual_w + 2 * off_buf,
                                                 self.scaler.actual_h + 2 * off_buf)
         if not screen_bounds_with_buffer.colliderect(self.rect): self.active = False
@@ -703,16 +810,15 @@ class Projectile(GameObject):
         if self.is_mortar_shell and self.aoe_radius > 0 and hasattr(game_state_ref,
                                                                     'trigger_aoe_damage') and not self.has_impacted:
             game_state_ref.trigger_aoe_damage(self.rect.center, self.aoe_radius, self.damage)
-            self.has_impacted = True  # Prevent multiple AOE triggers
-        self.active = False  # Projectile is used up on hit
+            self.has_impacted = True
+        self.active = False
 
     def draw(self, surface):
         if not self.active: return
         if self.is_beam:
             if self.beam_target_pos and self.origin_pos:
                 beam_total_duration = self.stats.get(cfg.STAT_PROJECTILE_BEAM_DURATION_SEC, 0.1)
-                # Flicker effect: draw only for a part of its lifetime or intermittently
-                if self.lifetime_seconds > beam_total_duration * 0.2:  # Example: visible for 80% of its life
+                if self.lifetime_seconds > beam_total_duration * 0.2:
                     pygame.draw.line(surface, self.beam_color, self.origin_pos, self.beam_target_pos, 2)
         elif self.sprite:
             surface.blit(self.sprite, self.rect.topleft)
@@ -752,7 +858,6 @@ class Enemy(GameObject):
             s_fb_size = max(1, self.scaler.scale_value(def_base_size * glob_scale_mult))
             self.sprite = pygame.Surface((s_fb_size, s_fb_size), pygame.SRCALPHA);
             self.sprite.fill(cfg.COLOR_RED + (180,))
-
         if self.sprite:
             self.rect = self.sprite.get_rect(center=initial_pos_xy_on_screen)
         else:
@@ -760,7 +865,6 @@ class Enemy(GameObject):
             fb_s = max(1, self.scaler.scale_value(fb_b_size * glob_scale_mult))
             self.rect = pygame.Rect(initial_pos_xy_on_screen[0] - fb_s // 2, initial_pos_xy_on_screen[1] - fb_s // 2,
                                     fb_s, fb_s)
-
         hb_s_w, hb_s_h = self.stats.get(cfg.STAT_HITBOX_SCALE_FACTORS_WH, (0.8, 0.8))
         hb_w, hb_h = int(self.rect.width * hb_s_w), int(self.rect.height * hb_s_h)
         self.hitbox = pygame.Rect(0, 0, max(1, hb_w), max(1, hb_h));
@@ -770,7 +874,6 @@ class Enemy(GameObject):
         if not self.active: return
         self.rect.x -= self.speed_pixels_sec * delta_time;
         self.hitbox.center = self.rect.center
-        # Despawn if enemy moves too far left of the usable area origin
         despawn_x_limit = self.scaler.screen_origin_x - self.scaler.scale_value(cfg.BASE_ENEMY_OFFSCREEN_DESPAWN_BUFFER)
         if self.rect.right < despawn_x_limit: self.active = False
 
@@ -802,9 +905,9 @@ class Enemy(GameObject):
                 cfg.BASE_ENEMY_HP_BAR_HEIGHT), self.scaler.scale_value(cfg.BASE_ENEMY_HP_BAR_OFFSET_Y)
             bg_r = pygame.Rect(self.rect.centerx - bar_w // 2, self.rect.top - bar_h - bar_off_y, bar_w, bar_h)
             hp_fill_w = int(bar_w * hp_r);
-            hp_r = pygame.Rect(bg_r.left, bg_r.top, hp_fill_w, bar_h)
+            hp_r_rect = pygame.Rect(bg_r.left, bg_r.top, hp_fill_w, bar_h)
             pygame.draw.rect(surface, bar_bg_col, bg_r);
-            pygame.draw.rect(surface, bar_fill_col, hp_r)
+            pygame.draw.rect(surface, bar_fill_col, hp_r_rect)
 
 
 # --- Calcul de Trajectoire pour Mortier ---
@@ -814,24 +917,23 @@ def calculate_mortar_fire_solution(turret_pos_pixels, target_pos_pixels, project
     dy_phys = -(target_pos_pixels[1] - turret_pos_pixels[1])
     v0 = projectile_initial_speed_pixels;
     g = abs(gravity_pixels_s2)
-    if abs(dx) < 1.0:  # Vertical shot
+    if abs(dx) < 1.0:
         if dy_phys > 0 and v0 ** 2 >= 2 * g * dy_phys:
-            if (v0 ** 2 - 2 * g * dy_phys) < 0: return None  # Should not happen due to prior check
+            if (v0 ** 2 - 2 * g * dy_phys) < 0: return None
             t = (v0 - math.sqrt(max(0, v0 ** 2 - 2 * g * dy_phys))) / g;
             return math.pi / 2, t
         return None
-    # Trajectory equation: tan(theta) = (v0^2 +- sqrt(v0^4 - g*(g*dx^2 + 2*dy*v0^2))) / (g*dx)
     discriminant = v0 ** 4 - g * (g * dx ** 2 + 2 * dy_phys * v0 ** 2)
-    if discriminant < 0: return None  # Target out of range
+    if discriminant < 0: return None
     sqrt_disc = math.sqrt(discriminant)
     try:
-        if g * dx == 0: return None  # Avoid division by zero
-        tan_theta_high = (v0 ** 2 + sqrt_disc) / (g * dx)  # Higher trajectory
+        if g * dx == 0: return None
+        tan_theta_high = (v0 ** 2 + sqrt_disc) / (g * dx)
     except ZeroDivisionError:
         return None
     angle_rad = math.atan(tan_theta_high)
     cos_angle = math.cos(angle_rad)
-    if abs(cos_angle) < 1e-6:  # Angle near 90 degrees, use vertical logic if applicable
+    if abs(cos_angle) < 1e-6:
         if dy_phys > 0 and v0 ** 2 >= 2 * g * dy_phys:
             t = (v0 - math.sqrt(max(0, v0 ** 2 - 2 * g * dy_phys))) / g;
             return math.pi / 2, t
@@ -840,7 +942,7 @@ def calculate_mortar_fire_solution(turret_pos_pixels, target_pos_pixels, project
         time_flight = dx / (v0 * cos_angle)
     except ZeroDivisionError:
         return None
-    if time_flight < 0: return None  # Shot backwards in time, invalid solution
+    if time_flight < 0: return None
     return angle_rad, time_flight
 
 
@@ -859,19 +961,22 @@ class ParticleEffect(GameObject):
         self.current_frame_index = 0;
         self.time_on_current_frame = 0
         if self.frames:
-            self.sprite = self.frames[0]; self.rect = self.sprite.get_rect(center=position_xy_abs)
+            self.sprite = self.frames[0];
+            self.rect = self.sprite.get_rect(center=position_xy_abs)
         else:
-            self.sprite = None; self.rect = pygame.Rect(position_xy_abs[0], position_xy_abs[1], 0,
-                                                        0); self.active = False
+            self.sprite = None;
+            self.rect = pygame.Rect(position_xy_abs[0], position_xy_abs[1], 0,
+                                    0);
+            self.active = False
 
     def update(self, delta_time, game_state_ref=None, scaler: util.Scaler = None):
         if not self.active or not self.frames: return
         self.time_on_current_frame += delta_time
         if self.time_on_current_frame >= self.frame_duration:
-            self.time_on_current_frame %= self.frame_duration  # Use modulo for smoother animation timing
+            self.time_on_current_frame %= self.frame_duration
             self.current_frame_index += 1
             if self.current_frame_index >= len(self.frames):
                 self.active = False
             else:
                 self.sprite = self.frames[self.current_frame_index]
-                if self.sprite: self.rect = self.sprite.get_rect(center=self.rect.center)  # Keep center consistent
+                if self.sprite: self.rect = self.sprite.get_rect(center=self.rect.center)
