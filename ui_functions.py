@@ -588,14 +588,18 @@ def draw_game_over_screen(screen, final_score, scaler: Scaler):
             screen.blit(btn_text_surf, btn_text_surf.get_rect(center=btn["rect"].center))
 
 
-def check_game_over_menu_click(event, mouse_pos, scaler: Scaler):  # Relies on screen absolute rects
-    if not game_over_buttons_layout: return None
+def check_game_over_menu_click(event, mouse_pos, scaler: Scaler):
+    if not game_over_buttons_layout:
+        if cfg.DEBUG_MODE: print("GAME OVER CLICK CHECK: Layout non initialisé.")
+        return None
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if cfg.DEBUG_MODE: print(f"GAME OVER CLICK CHECK: Clic détecté à {mouse_pos}")
         for btn in game_over_buttons_layout:
+            if cfg.DEBUG_MODE: print(f"  Vérification bouton: {btn['text']}, Rect: {btn['rect']}")
             if btn["rect"].collidepoint(mouse_pos):
+                if cfg.DEBUG_MODE: print(f"  ACTION CLIC: {btn['action']}")
                 return btn["action"]
     return None
-
 
 def draw_tutorial_message(screen, message, game_state, scaler: Scaler):
     if not message or not hasattr(game_state, 'tutorial_message_timer') or game_state.tutorial_message_timer <= 0:
