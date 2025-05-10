@@ -156,6 +156,7 @@ BUILDING_SPRITE_PATH = os.path.join(ASSET_PATH, "buildings/")
 TURRET_SPRITE_PATH = os.path.join(ASSET_PATH, "turrets/")
 ENEMY_SPRITE_PATH = os.path.join(ASSET_PATH, "enemies/")
 PROJECTILE_SPRITE_PATH = os.path.join(ASSET_PATH, "projectiles/")
+DEFAULT_BULLET_SPRITE_NAME = "Default_bullet_sprite.png"
 UI_SPRITE_PATH = os.path.join(ASSET_PATH, "ui/")
 EFFECT_SPRITE_PATH = os.path.join(ASSET_PATH, "effects/")
 SOUND_PATH = os.path.join(ASSET_PATH, "sounds/")
@@ -204,8 +205,15 @@ STAT_PROJECTILE_FLAT_SPEED_PIXELS = "projectile_flat_speed_pixels_sec"
 STAT_AOE_RADIUS_PIXELS = "aoe_radius_pixels"
 STAT_PROJECTILE_LIFETIME_SEC = "projectile_lifetime_seconds"
 BASE_PROJECTILE_SPRITE_SCALE_FACTOR = 0.5 # Factor to scale original projectile sprites
-BASE_PROJECTILE_FALLBACK_SIZE = 10 # Fallback size for projectile sprites if loading fails
+BASE_PROJECTILE_FALLBACK_SIZE = 5 # Fallback size for projectile sprites if loading fails
 BASE_PROJECTILE_OFFSCREEN_BUFFER = 100 # Buffer around usable area for projectile deactivation
+STAT_FLAMETHROWER_DURATION_SEC = "flamethrower_duration_seconds"
+STAT_FLAMETHROWER_COOLDOWN_SEC = "flamethrower_cooldown_seconds"
+STAT_FLAMETHROWER_CHARGE_SPRITE_NAME = "flamethrower_charge_sprite_name"
+STAT_FLAMETHROWER_DISCHARGE_SPRITE_NAME = "flamethrower_discharge_sprite_name"
+STAT_PROJECTILE_IS_BEAM = "projectile_is_beam"
+STAT_PROJECTILE_BEAM_COLOR = "projectile_beam_color"
+STAT_PROJECTILE_BEAM_DURATION_SEC = "projectile_beam_duration_seconds"
 
 
 # Ennemis spécifiques
@@ -221,10 +229,14 @@ STAT_HITBOX_SCALE_FACTORS_WH = "hitbox_scale_factors_wh" # (width_factor, height
 BASE_ENEMY_HP_BAR_WIDTH = 30
 BASE_ENEMY_HP_BAR_HEIGHT = 5
 BASE_ENEMY_HP_BAR_OFFSET_Y = 3
-BASE_ENEMY_FALLBACK_SIZE = 30
+BASE_ENEMY_FALLBACK_SIZE = 20
 BASE_ENEMY_SPAWN_Y_PADDING = 20 # Padding from top/bottom of usable spawn area for enemies
 BASE_ENEMY_SPAWN_X_OFFSET = 50 # How far off-screen (right) enemies spawn
 BASE_ENEMY_OFFSCREEN_DESPAWN_BUFFER = 50 # How far off-screen (left) enemies despawn
+
+# --- Paramètres de Spawn des Ennemis ---
+ENEMY_SPAWN_MIN_Y_PERCENTAGE = 0.15  # Pourcentage depuis le HAUT de la zone de jeu (ex: 15%)
+ENEMY_SPAWN_MAX_Y_PERCENTAGE = 0.70  # Pourcentage depuis le HAUT de la zone de jeu (ex: 85%, laissant 15% en bas)
 
 # --- Paramètres de Vagues ---
 WAVE_INITIAL_PREP_TIME_SEC = 10.0 # Shortened for testing

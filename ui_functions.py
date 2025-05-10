@@ -275,8 +275,11 @@ def initialize_build_menu_layout(game_state, scaler: Scaler):
         {"id": "generator", "tooltip": "Générateur", "icon_name": "icon_generator.png"},
         {"id": "storage", "tooltip": "Stockage Fer", "icon_name": "icon_storage.png"},
         {"id": "miner", "tooltip": "Mine de Fer", "icon_name": "icon_miner.png"},
-        {"id": "gatling_turret", "tooltip": "Tourelle Gatling", "icon_name": "icon_turret_gatling.png"},
+        # ANCIEN: {"id": "gatling_turret", "tooltip": "Tourelle Gatling", "icon_name": "icon_turret_gatling.png"},
+        {"id": "machine_gun_turret", "tooltip": "Mitrailleuse", "icon_name": "icon_turret_machinegun.png"}, # NOUVEAU
         {"id": "mortar_turret", "tooltip": "Tourelle Mortier", "icon_name": "icon_turret_mortar.png"},
+        {"id": "flamethrower_turret", "tooltip": "Lance-Flammes", "icon_name": "icon_turret_flamethrower.png"}, # NOUVEAU
+        {"id": "sniper_turret", "tooltip": "Tourelle Sniper", "icon_name": "icon_turret_sniper.png"},       # NOUVEAU
         {"id": "expand_up", "tooltip": "Étendre Haut", "icon_name": "icon_expand_up.png"},
         {"id": "expand_side", "tooltip": "Étendre Côté", "icon_name": "icon_expand_side.png"},
     ]
