@@ -623,10 +623,25 @@ class Turret(GameObject):
         pivot_screen_x, pivot_screen_y = self.rect.centerx, self.rect.centery
         cannon_length_from_pivot = 0
         if self.gun_sprite_scaled_original and self.gun_pivot_offset_in_gun_sprite:
-            cannon_length_from_pivot = self.gun_sprite_scaled_original.get_width() - \
-                                       self.gun_pivot_offset_in_gun_sprite[0]
-        proj_origin_x = pivot_screen_x + math.cos(math.radians(self.current_angle_deg)) * cannon_length_from_pivot
-        proj_origin_y = pivot_screen_y - math.sin(math.radians(self.current_angle_deg)) * cannon_length_from_pivot
+            if self.type == "machine_gun_turret":
+                # Supposons que self.gun_sprite_scaled_original est le sprite du canon
+                # et que son point de pivot est son centre (width/2, height/2).
+                # La longueur effective du canon depuis le pivot jusqu'au bout.
+                # Si votre sprite de canon est dessiné avec son origine au pivot et s'étend vers la droite,
+                # alors la longueur est la moitié de sa largeur.
+                effective_cannon_length = self.gun_sprite_scaled_original.get_width() / 4
+            elif self.is_flamethrower:  # Le lance-flamme pourrait avoir une origine de flamme différente
+                effective_cannon_length = self.gun_sprite_scaled_original.get_width() * 0.4  # Exemple, un peu en avant du centre
+            else:  # Pour mortier, sniper, etc.
+                # Si le pivot est au centre, et le canon s'étend sur toute la largeur
+                effective_cannon_length = self.gun_sprite_scaled_original.get_width() / 2
+                # Si le pivot était à gauche (0.25 * width), alors ce serait :
+                # effective_cannon_length = self.gun_sprite_scaled_original.get_width() * (1 - 0.25)
+                # Mais on a changé le pivot au centre pour toutes les tourelles.
+
+            proj_origin_x = pivot_screen_x + math.cos(math.radians(self.current_angle_deg)) * effective_cannon_length
+            proj_origin_y = pivot_screen_y - math.sin(math.radians(self.current_angle_deg)) * effective_cannon_length
+            proj_origin = (proj_origin_x, proj_origin_y)
         proj_origin = (proj_origin_x, proj_origin_y)
 
         if self.is_flamethrower:
