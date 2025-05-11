@@ -51,12 +51,6 @@ def draw_main_menu(screen, scaler: Scaler):
     button_spacing = scaler.scale_value(cfg.BASE_MAIN_MENU_BUTTON_SPACING)
     total_menu_height = num_options * button_height_approx + (num_options - 1) * button_spacing
 
-    # Center menu vertically within the usable area, below the title
-    # start_y_buttons_area = title_rect.bottom + scaler.scale_value(cfg.BASE_MAIN_MENU_START_Y_OFFSET_FROM_TITLE)
-    # available_height_for_buttons = (scaler.screen_origin_y + scaler.usable_h) - start_y_buttons_area
-    # current_y_center = start_y_buttons_area + (available_height_for_buttons - total_menu_height) // 2 + button_height_approx // 2
-
-    # Simpler: position buttons starting at a certain offset from usable area center, or below title
     buttons_start_y_abs = title_rect.bottom + scaler.scale_value(cfg.BASE_MAIN_MENU_START_Y_OFFSET_FROM_TITLE)
     current_y_center = buttons_start_y_abs + button_height_approx // 2
 
@@ -83,7 +77,6 @@ def draw_main_menu(screen, scaler: Scaler):
 
 
 def check_main_menu_click(event, mouse_pos, scaler: Scaler):
-    # This function relies on main_menu_rendered_rects, which are already screen absolute
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         for action, rect in main_menu_rendered_rects.items():
             if rect and rect.collidepoint(mouse_pos):
@@ -99,7 +92,7 @@ def check_main_menu_click(event, mouse_pos, scaler: Scaler):
 
 
 def draw_lore_screen(screen, scaler: Scaler):
-    screen.fill(cfg.COLOR_MENU_BACKGROUND)  # Full screen background
+    screen.fill(cfg.COLOR_MENU_BACKGROUND)
     lore_text = [
         "Année 1941. L'ennemi déferle du ciel.",
         "Votre mission: construire et défendre la dernière ligne.",
@@ -135,13 +128,12 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
     pygame.draw.rect(screen, bg_color, top_bar_rect)
 
     padding_x = scaler.ui_general_padding
-    padding_y_center_abs = scaler.screen_origin_y + scaler.ui_top_bar_height // 2  # Y center within the bar on screen
+    padding_y_center_abs = scaler.screen_origin_y + scaler.ui_top_bar_height // 2
     text_color_default = getattr(cfg, 'COLOR_UI_TEXT_ON_GREY', cfg.COLOR_BLACK)
     icon_text_spacing = scaler.scale_value(cfg.BASE_UI_ICON_TEXT_SPACING)
 
     current_x_abs = scaler.screen_origin_x + padding_x
 
-    # Money
     money_icon = game_state.ui_icons.get('money')
     if money_icon:
         scaled_icon = util.scale_sprite_to_size(money_icon, scaler.ui_icon_size_default, scaler.ui_icon_size_default)
@@ -155,7 +147,6 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
         screen.blit(money_text_surf, money_rect)
         current_x_abs = money_rect.right + padding_x
 
-    # Iron
     iron_icon = game_state.ui_icons.get('iron')
     if iron_icon:
         scaled_icon = util.scale_sprite_to_size(iron_icon, scaler.ui_icon_size_default, scaler.ui_icon_size_default)
@@ -172,7 +163,6 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
         screen.blit(iron_text_surf, iron_rect)
         current_x_abs = iron_rect.right + padding_x
 
-    # Energy
     energy_icon = game_state.ui_icons.get('energy')
     if energy_icon:
         scaled_icon = util.scale_sprite_to_size(energy_icon, scaler.ui_icon_size_default, scaler.ui_icon_size_default)
@@ -191,11 +181,9 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
         energy_rect = energy_text_surf.get_rect(midleft=(current_x_abs, padding_y_center_abs))
         screen.blit(energy_text_surf, energy_rect)
 
-    # Right-aligned items (within usable area)
     right_align_x_abs = scaler.screen_origin_x + scaler.usable_w - padding_x
 
-    # Wave Text
-    wave_text_str = ""  # Logic as before
+    wave_text_str = ""
     if game_state.wave_in_progress:
         wave_text_str = f"Vague {game_state.current_wave_number}"
     elif game_state.game_over_flag:
@@ -215,7 +203,6 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
         screen.blit(wave_text_surf, wave_rect)
         right_align_x_abs = wave_rect.left - padding_x
 
-    # City HP
     hp_text_str = f"Ville: {game_state.city_hp}/{game_state.max_city_hp}"
     hp_text_surf = util.render_text_surface(hp_text_str, scaler.font_size_medium, text_color_default)
     if hp_text_surf:
@@ -231,7 +218,6 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
 
 
 def draw_base_grid(screen, game_state, scaler: Scaler):
-    # buildable_area_rect_pixels in GameState should already be calculated considering usable area origins
     if not hasattr(game_state, 'buildable_area_rect_pixels') or not game_state.buildable_area_rect_pixels:
         return
     grid_origin_x_abs = game_state.buildable_area_rect_pixels.left
@@ -248,9 +234,7 @@ def draw_base_grid(screen, game_state, scaler: Scaler):
             )
             is_reinforced_spot = False
             if hasattr(cfg, 'BASE_GRID_INITIAL_HEIGHT_TILES') and hasattr(game_state, 'get_reinforced_row_index'):
-                # Assuming get_reinforced_row_index gives the absolute row index from original bottom
-                # This logic needs careful review based on how grid expansion and indexing work
-                reinforced_row_from_top = game_state.get_reinforced_row_index()  # If this is visual row index
+                reinforced_row_from_top = game_state.get_reinforced_row_index()
                 if r == reinforced_row_from_top and c < game_state.grid_initial_width_tiles:
                     is_reinforced_spot = True
 
@@ -270,58 +254,108 @@ build_menu_layout = []
 def initialize_build_menu_layout(game_state, scaler: Scaler):
     global build_menu_layout
     build_menu_layout = []
+
     menu_item_definitions = [
-        {"id": "frame", "tooltip": "Structure", "icon_name": "icon_frame.png"},
-        {"id": "generator", "tooltip": "Générateur", "icon_name": "icon_generator.png"},
-        {"id": "storage", "tooltip": "Stockage Fer", "icon_name": "icon_storage.png"},
-        {"id": "miner", "tooltip": "Mine de Fer", "icon_name": "icon_miner.png"},
-        # ANCIEN: {"id": "gatling_turret", "tooltip": "Tourelle Gatling", "icon_name": "icon_turret_gatling.png"},
-        {"id": "machine_gun_turret", "tooltip": "Mitrailleuse", "icon_name": "icon_turret_machinegun.png"}, # NOUVEAU
-        {"id": "mortar_turret", "tooltip": "Tourelle Mortier", "icon_name": "icon_turret_mortar.png"},
-        {"id": "flamethrower_turret", "tooltip": "Lance-Flammes", "icon_name": "icon_turret_flamethrower.png"}, # NOUVEAU
-        {"id": "sniper_turret", "tooltip": "Tourelle Sniper", "icon_name": "icon_turret_sniper.png"},       # NOUVEAU
-        {"id": "expand_up", "tooltip": "Étendre Haut", "icon_name": "icon_expand_up.png"},
-        {"id": "expand_side", "tooltip": "Étendre Côté", "icon_name": "icon_expand_side.png"},
+        {"id": "frame", "tooltip": "Structure", "sprite_source_type": "buildings",
+         "sprite_key_in_stats": cfg.STAT_SPRITE_DEFAULT_NAME},
+        {"id": "generator", "tooltip": "Générateur", "sprite_source_type": "buildings",
+         "sprite_key_in_stats": cfg.STAT_SPRITE_DEFAULT_NAME},
+        {"id": "storage", "tooltip": "Stockage Fer", "sprite_source_type": "buildings",
+         "sprite_key_in_stats": cfg.STAT_SPRITE_DEFAULT_NAME},
+        {"id": "miner", "tooltip": "Mine de Fer", "sprite_source_type": "buildings",
+         "sprite_key_in_stats": cfg.STAT_SPRITE_DEFAULT_NAME},
+
+        {"id": "machine_gun_turret", "tooltip": "Mitrailleuse", "sprite_source_type": "turrets",
+         "sprite_key_in_stats": cfg.STAT_TURRET_GUN_SPRITE_NAME},
+        {"id": "mortar_turret", "tooltip": "Tourelle Mortier", "sprite_source_type": "turrets",
+         "sprite_key_in_stats": cfg.STAT_TURRET_GUN_SPRITE_NAME},
+        {"id": "flamethrower_turret", "tooltip": "Lance-Flammes", "sprite_source_type": "turrets",
+         "sprite_key_in_stats": cfg.STAT_FLAMETHROWER_CHARGE_SPRITE_NAME},
+        {"id": "sniper_turret", "tooltip": "Tourelle Sniper", "sprite_source_type": "turrets",
+         "sprite_key_in_stats": cfg.STAT_TURRET_GUN_SPRITE_NAME},
+
+        {"id": "expand_up", "tooltip": "Étendre Haut", "sprite_source_type": "ui", "icon_name": "icon_expand_up.png"},
+        {"id": "expand_side", "tooltip": "Étendre Côté", "sprite_source_type": "ui",
+         "icon_name": "icon_expand_side.png"},
     ]
 
     button_size_w = scaler.ui_build_menu_button_w
     button_size_h = scaler.ui_build_menu_button_h
     button_padding = scaler.ui_build_menu_button_padding
-    menu_height = scaler.ui_build_menu_height  # This is the height of the bar itself
-
-    # Y position of the build menu bar on the screen (top edge of the bar)
+    menu_height = scaler.ui_build_menu_height
     menu_bar_top_y_abs = scaler.screen_origin_y + scaler.usable_h - menu_height
-
-    # X position for the first button, inside the usable area
     current_button_x_abs = scaler.screen_origin_x + scaler.ui_general_padding
+    button_actual_y_abs = menu_bar_top_y_abs + (menu_height - button_size_h) // 2
 
-    # Y position for the buttons, centered vertically within the menu bar
-    button_center_y_in_bar = menu_height // 2
-    button_actual_y_abs = menu_bar_top_y_abs + button_center_y_in_bar - (button_size_h // 2)
-
-    icon_padding_internal = scaler.scale_value(cfg.BASE_UI_GENERAL_PADDING)
+    icon_padding_internal = scaler.scale_value(cfg.BASE_UI_ICON_INTERNAL_PADDING)
 
     for item_def in menu_item_definitions:
-        icon_full_path = os.path.join(cfg.UI_SPRITE_PATH, item_def["icon_name"])
-        icon_surf_orig = util.load_sprite(icon_full_path)
+        icon_surf_orig = None
+        item_id = item_def["id"]
+
+        if item_def["sprite_source_type"] == "ui":
+            icon_full_path = os.path.join(cfg.UI_SPRITE_PATH, item_def["icon_name"])
+            icon_surf_orig = util.load_sprite(icon_full_path)
+        else:
+            item_stats = objects.get_item_stats(item_id)
+            if item_stats:
+                sprite_filename = item_stats.get(item_def["sprite_key_in_stats"])
+                if item_def["sprite_source_type"] == "buildings":
+                    sprite_path_prefix = cfg.BUILDING_SPRITE_PATH
+                    if item_id == "miner" and cfg.STAT_SPRITE_VARIANTS_DICT in item_stats:
+                        variants = item_stats[cfg.STAT_SPRITE_VARIANTS_DICT]
+                        if "single" in variants: sprite_filename = variants["single"]
+                elif item_def["sprite_source_type"] == "turrets":
+                    sprite_path_prefix = cfg.TURRET_SPRITE_PATH
+                else:
+                    sprite_path_prefix = ""
+                    sprite_filename = None
+
+                if sprite_filename and sprite_path_prefix:
+                    icon_full_path = os.path.join(sprite_path_prefix, sprite_filename)
+                    icon_surf_orig = util.load_sprite(icon_full_path)
+                elif cfg.DEBUG_MODE:
+                    print(
+                        f"AVERTISSEMENT UI: Sprite non trouvé dans les stats pour {item_id} (clé: {item_def['sprite_key_in_stats']})")
+            elif cfg.DEBUG_MODE:
+                print(f"AVERTISSEMENT UI: Stats non trouvées pour {item_id}")
+
+        if not icon_surf_orig:
+            if cfg.DEBUG_MODE: print(f"UI Icon Fallback: Création d'un placeholder pour {item_id}")
+            icon_surf_orig = pygame.Surface((cfg.BASE_TILE_SIZE, cfg.BASE_TILE_SIZE), pygame.SRCALPHA)
+            icon_surf_orig.fill(cfg.COLOR_MAGENTA + (100,))
+
         icon_target_w = button_size_w - (2 * icon_padding_internal)
         icon_target_h = button_size_h - (2 * icon_padding_internal)
-        icon_surf_scaled = util.scale_sprite_to_size(icon_surf_orig, icon_target_w, icon_target_h)
+
+        orig_w, orig_h = icon_surf_orig.get_size()
+        if orig_w == 0 or orig_h == 0:
+            if cfg.DEBUG_MODE: print(f"Sprite original invalide pour {item_id}")
+            icon_surf_scaled = pygame.Surface((icon_target_w, icon_target_h));
+            icon_surf_scaled.fill(cfg.COLOR_RED)
+        else:
+            ratio_w = icon_target_w / orig_w
+            ratio_h = icon_target_h / orig_h
+            scale_ratio = min(ratio_w, ratio_h)
+
+            final_scaled_w = int(orig_w * scale_ratio)
+            final_scaled_h = int(orig_h * scale_ratio)
+            icon_surf_scaled = util.scale_sprite_to_size(icon_surf_orig, final_scaled_w, final_scaled_h)
 
         btn_rect = pygame.Rect(current_button_x_abs, button_actual_y_abs, button_size_w, button_size_h)
         build_menu_layout.append({
-            "id": item_def["id"], "rect": btn_rect, "tooltip": item_def["tooltip"], "icon": icon_surf_scaled
+            "id": item_id, "rect": btn_rect, "tooltip": item_def["tooltip"], "icon": icon_surf_scaled
         })
         current_button_x_abs += button_size_w + button_padding
-    if cfg.DEBUG_MODE: print("UI DEBUG: Build menu layout initialized (usable area aware).")
+
+    if cfg.DEBUG_MODE: print("UI DEBUG: Build menu layout initialized (avec sprites d'objets).")
 
 
 def draw_build_menu_ui(screen, game_state, scaler: Scaler):
     global build_menu_layout
-    # Check if scaler properties that affect layout are valid (e.g., button_w > 0)
     if not build_menu_layout or scaler.ui_build_menu_button_w == 0:
         initialize_build_menu_layout(game_state, scaler)
-        if not build_menu_layout: return  # Failed to init
+        if not build_menu_layout: return
 
     menu_height_runtime = scaler.ui_build_menu_height
     if menu_height_runtime <= 0: return
@@ -341,7 +375,7 @@ def draw_build_menu_ui(screen, game_state, scaler: Scaler):
     mouse_x, mouse_y = pygame.mouse.get_pos()
     hovered_tooltip_text = None
 
-    for button_info in build_menu_layout:  # Button rects are screen absolute
+    for button_info in build_menu_layout:
         btn_rect = button_info["rect"]
         is_selected = (hasattr(game_state, 'selected_item_to_place_type') and
                        game_state.selected_item_to_place_type == button_info["id"])
@@ -358,28 +392,63 @@ def draw_build_menu_ui(screen, game_state, scaler: Scaler):
             screen.blit(button_info["icon"], (icon_x, icon_y))
         pygame.draw.rect(screen, border_color_current, btn_rect, border_thickness)
 
-        if is_hovered:  # Tooltip logic (same as before, positions relative to mouse)
+        if is_hovered:
             current_tooltip_base = button_info["tooltip"]
             item_id_for_stats = button_info["id"]
+
+            tooltip_lines = [current_tooltip_base]  # Commence avec le nom de l'item
+
             if not item_id_for_stats.startswith("expand_"):
                 item_stats = objects.get_item_stats(item_id_for_stats)
-                cost_money = item_stats.get(cfg.STAT_COST_MONEY, 0) if item_stats else 0
-                cost_iron = item_stats.get(cfg.STAT_COST_IRON, 0) if item_stats else 0
-                current_tooltip_base += f" ($:{cost_money} Fe:{cost_iron})"
+                if item_stats:  # S'assurer que les stats existent
+                    cost_money = item_stats.get(cfg.STAT_COST_MONEY, 0)
+                    cost_iron_build = item_stats.get(cfg.STAT_COST_IRON, 0)
+
+                    cost_parts = []
+                    if cost_money > 0: cost_parts.append(f"${cost_money}")
+                    if cost_iron_build > 0: cost_parts.append(f"Fe(B):{cost_iron_build}")
+
+                    if cost_parts:
+                        tooltip_lines.append(f"Coût: {', '.join(cost_parts)}")
+                    else:
+                        tooltip_lines.append("Coût: Gratuit")
+
+                    if objects.is_turret_type(item_id_for_stats):
+                        cost_iron_shot = item_stats.get(cfg.STAT_IRON_COST_PER_SHOT, 0)
+                        if cost_iron_shot > 0:
+                            tooltip_lines.append(f"Fe/tir: {cost_iron_shot}")
+
+                    power_prod = item_stats.get(cfg.STAT_POWER_PRODUCTION, 0)
+                    power_cons = item_stats.get(cfg.STAT_POWER_CONSUMPTION, 0)
+                    if power_prod > 0:
+                        tooltip_lines.append(f"Énergie: +{power_prod}W")
+                    elif power_cons > 0:
+                        tooltip_lines.append(f"Énergie: -{power_cons}W")
+
+                    iron_prod_pm = item_stats.get(cfg.STAT_IRON_PRODUCTION_PM, 0)
+                    if iron_prod_pm > 0:
+                        tooltip_lines.append(f"Fer/min: +{iron_prod_pm}")
+
+                    storage_increase = item_stats.get(cfg.STAT_IRON_STORAGE_INCREASE, 0)
+                    if storage_increase > 0:
+                        tooltip_lines.append(f"Stockage Fe: +{storage_increase}")
+                else:
+                    tooltip_lines.append("Stats non disponibles")
             else:
                 cost = "N/A"
                 if hasattr(game_state, 'get_next_expansion_cost'):
                     cost_val = game_state.get_next_expansion_cost("up" if item_id_for_stats == "expand_up" else "side")
                     cost = str(cost_val) if cost_val != "Max" else "Max"
-                current_tooltip_base += f" ($:{cost})"
-            hovered_tooltip_text = current_tooltip_base
+                tooltip_lines.append(f"Coût: ${cost}")
 
-    if hovered_tooltip_text:  # Tooltip drawing logic (same as before)
+            hovered_tooltip_text = "\n".join(tooltip_lines)
+
+    if hovered_tooltip_text:
         tooltip_surf = util.render_text_surface(hovered_tooltip_text, scaler.font_size_small, TOOLTIP_TEXT_COLOR)
         if tooltip_surf:
             tooltip_offset_y_scaled = scaler.scale_value(cfg.BASE_UI_TOOLTIP_OFFSET_Y)
             tooltip_rect = tooltip_surf.get_rect(midbottom=(mouse_x, mouse_y + tooltip_offset_y_scaled))
-            screen_boundary = screen.get_rect()  # Full screen rect for tooltip clamping
+            screen_boundary = screen.get_rect()
             tooltip_rect.clamp_ip(screen_boundary)
             tooltip_padding_x_scaled = scaler.scale_value(cfg.BASE_UI_TOOLTIP_PADDING_X)
             tooltip_padding_y_scaled = scaler.scale_value(cfg.BASE_UI_TOOLTIP_PADDING_Y)
@@ -392,13 +461,11 @@ def draw_build_menu_ui(screen, game_state, scaler: Scaler):
 
 
 def check_build_menu_click(game_state, mouse_pixel_pos, scaler: Scaler):
-    # This function relies on build_menu_layout which now has screen absolute rects
     if not build_menu_layout: return None
-    # Optional: check if click is within the menu bar's absolute screen rect first
     menu_bar_rect = pygame.Rect(scaler.screen_origin_x,
                                 scaler.screen_origin_y + scaler.usable_h - scaler.ui_build_menu_height,
                                 scaler.usable_w, scaler.ui_build_menu_height)
-    if not menu_bar_rect.collidepoint(mouse_pixel_pos):  # Optimization
+    if not menu_bar_rect.collidepoint(mouse_pixel_pos):
         return None
     for button_info in build_menu_layout:
         if button_info["rect"].collidepoint(mouse_pixel_pos):
@@ -407,7 +474,6 @@ def check_build_menu_click(game_state, mouse_pixel_pos, scaler: Scaler):
 
 
 def draw_placement_preview(screen, game_state, scaler: Scaler):
-    # GameState's buildable_area_rect_pixels is already screen absolute
     if hasattr(game_state, 'selected_item_to_place_type') and game_state.selected_item_to_place_type and \
             hasattr(game_state, 'placement_preview_sprite') and game_state.placement_preview_sprite and \
             hasattr(game_state, 'buildable_area_rect_pixels'):
@@ -433,17 +499,13 @@ def draw_error_message(screen, message, game_state, scaler: Scaler):
     error_surf = util.render_text_surface(message, scaler.font_size_medium, cfg.COLOR_ERROR_TEXT,
                                           background_color=cfg.COLOR_ERROR_BG)
     if error_surf:
-        # Centered horizontally within usable area
         pos_x_abs = scaler.screen_origin_x + (scaler.usable_w - error_surf.get_width()) // 2
-        # Positioned vertically below top bar, within usable area
         pos_y_abs = scaler.screen_origin_y + scaler.ui_top_bar_height + scaler.scale_value(
             cfg.BASE_UI_ERROR_MESSAGE_OFFSET_Y)
         screen.blit(error_surf, (pos_x_abs, pos_y_abs))
 
 
 # --- MODAL SCREENS (Pause, Game Over) ---
-# These will draw an overlay over the usable area and center their content within it.
-
 pause_menu_buttons_layout = []
 
 
@@ -460,18 +522,11 @@ def initialize_pause_menu_layout(scaler: Scaler):
     btn_width = scaler.scale_value(btn_base_width)
     btn_height = scaler.scale_value(btn_base_height)
     spacing = scaler.scale_value(spacing_base)
-
     usable_center_x, usable_center_y = scaler.get_center_of_usable_area()
-
-    # Calculate total height of buttons to help center them vertically
     num_buttons = len(options)
     total_buttons_block_height = num_buttons * btn_height + (num_buttons - 1) * spacing
-
-    # Start Y for the block of buttons, e.g., slightly below center of usable area
-    # Or below a "PAUSE" title. For simplicity, let's center block around usable_center_y + offset
     block_start_y_abs = usable_center_y - total_buttons_block_height // 2 + scaler.scale_value(
         cfg.BASE_PAUSE_MENU_BUTTON_BLOCK_Y_OFFSET)
-
     for i, opt in enumerate(options):
         rect_x_abs = usable_center_x - btn_width // 2
         rect_y_abs = block_start_y_abs + i * (btn_height + spacing)
@@ -483,22 +538,18 @@ def initialize_pause_menu_layout(scaler: Scaler):
 def draw_pause_screen(screen, scaler: Scaler):
     if not pause_menu_buttons_layout: initialize_pause_menu_layout(scaler)
     if not pause_menu_buttons_layout: return
-
     overlay = pygame.Surface((scaler.usable_w, scaler.usable_h), pygame.SRCALPHA)
     overlay.fill(cfg.COLOR_PAUSE_OVERLAY_BG)
     screen.blit(overlay, (scaler.screen_origin_x, scaler.screen_origin_y))
-
     usable_center_x, _ = scaler.get_center_of_usable_area()
-    pause_title_y_abs = scaler.screen_origin_y + scaler.usable_h // 3  # Example Y for "PAUSE"
-
+    pause_title_y_abs = scaler.screen_origin_y + scaler.usable_h // 3
     pause_text_surf = util.render_text_surface("PAUSE", scaler.font_size_xlarge, cfg.COLOR_PAUSE_TEXT)
     if pause_text_surf:
         text_rect = pause_text_surf.get_rect(center=(usable_center_x, pause_title_y_abs))
         screen.blit(pause_text_surf, text_rect)
-
     mouse_pos = pygame.mouse.get_pos()
     border_thickness = scaler.scale_value(cfg.BASE_UI_BUTTON_BORDER_THICKNESS)
-    for btn_info in pause_menu_buttons_layout:  # Rects are screen absolute
+    for btn_info in pause_menu_buttons_layout:
         btn_rect = btn_info["rect"]
         is_hovered = btn_rect.collidepoint(mouse_pos)
         bg_color = cfg.COLOR_BUTTON_HOVER_BG if is_hovered else cfg.COLOR_BUTTON_BG
@@ -510,7 +561,7 @@ def draw_pause_screen(screen, scaler: Scaler):
             screen.blit(text_surf, text_surf.get_rect(center=btn_rect.center))
 
 
-def check_pause_menu_click(event, mouse_pos, scaler: Scaler):  # Relies on screen absolute rects in layout
+def check_pause_menu_click(event, mouse_pos, scaler: Scaler):
     if not pause_menu_buttons_layout: return None
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         for btn_info in pause_menu_buttons_layout:
@@ -535,15 +586,10 @@ def initialize_game_over_layout(scaler: Scaler):
     btn_width = scaler.scale_value(btn_base_width)
     btn_height = scaler.scale_value(btn_base_height)
     spacing = scaler.scale_value(spacing_base)
-
     usable_center_x, usable_center_y = scaler.get_center_of_usable_area()
     num_buttons = len(options)
     total_buttons_block_height = num_buttons * btn_height + (num_buttons - 1) * spacing
-
-    # Position button block relative to where "GAME OVER" and score are, e.g. below them
-    # This assumes GAME OVER and score text are roughly centered around usable_center_y
     block_start_y_abs = usable_center_y + scaler.scale_value(cfg.BASE_GAMEOVER_MENU_BUTTON_START_Y_OFFSET)
-
     for i, opt in enumerate(options):
         rect_x_abs = usable_center_x - btn_width // 2
         rect_y_abs = block_start_y_abs + i * (btn_height + spacing)
@@ -555,29 +601,24 @@ def initialize_game_over_layout(scaler: Scaler):
 def draw_game_over_screen(screen, final_score, scaler: Scaler):
     if not game_over_buttons_layout: initialize_game_over_layout(scaler)
     if not game_over_buttons_layout: return
-
     overlay = pygame.Surface((scaler.usable_w, scaler.usable_h), pygame.SRCALPHA)
     overlay.fill(cfg.COLOR_GAMEOVER_OVERLAY_BG)
     screen.blit(overlay, (scaler.screen_origin_x, scaler.screen_origin_y))
-
     usable_center_x, usable_center_y = scaler.get_center_of_usable_area()
-
     go_text_surf = util.render_text_surface("GAME OVER", scaler.font_size_xlarge, cfg.COLOR_GAMEOVER_TEXT)
     score_text_surf = util.render_text_surface(f"Score Final: {final_score}", scaler.font_size_large,
                                                cfg.COLOR_TEXT_LIGHT)
-
     if go_text_surf:
-        go_rect_y_rel_to_center = scaler.scale_value(cfg.BASE_GAMEOVER_TEXT_Y_OFFSET)  # Offset from center
+        go_rect_y_rel_to_center = scaler.scale_value(cfg.BASE_GAMEOVER_TEXT_Y_OFFSET)
         go_rect = go_text_surf.get_rect(center=(usable_center_x, usable_center_y - go_rect_y_rel_to_center))
         screen.blit(go_text_surf, go_rect)
     if score_text_surf:
-        score_rect_y_rel_to_center = scaler.scale_value(cfg.BASE_GAMEOVER_SCORE_Y_OFFSET)  # Offset from center
+        score_rect_y_rel_to_center = scaler.scale_value(cfg.BASE_GAMEOVER_SCORE_Y_OFFSET)
         score_rect = score_text_surf.get_rect(center=(usable_center_x, usable_center_y + score_rect_y_rel_to_center))
         screen.blit(score_text_surf, score_rect)
-
     mouse_pos = pygame.mouse.get_pos()
     border_thickness = scaler.scale_value(cfg.BASE_UI_BUTTON_BORDER_THICKNESS)
-    for btn in game_over_buttons_layout:  # Rects are screen absolute
+    for btn in game_over_buttons_layout:
         is_hovered = btn["rect"].collidepoint(mouse_pos)
         bg_color = cfg.COLOR_BUTTON_HOVER_BG if is_hovered else cfg.COLOR_BUTTON_BG
         border_color_current = cfg.COLOR_BUTTON_HOVER_BORDER if is_hovered else cfg.COLOR_BUTTON_BORDER
@@ -601,6 +642,7 @@ def check_game_over_menu_click(event, mouse_pos, scaler: Scaler):
                 return btn["action"]
     return None
 
+
 def draw_tutorial_message(screen, message, game_state, scaler: Scaler):
     if not message or not hasattr(game_state, 'tutorial_message_timer') or game_state.tutorial_message_timer <= 0:
         return
@@ -609,21 +651,13 @@ def draw_tutorial_message(screen, message, game_state, scaler: Scaler):
     msg_surf = util.render_text_surface(message, font_to_use, cfg.COLOR_TUTORIAL_TEXT,
                                         background_color=cfg.COLOR_TUTORIAL_BG)
     if msg_surf:
-        # Centered horizontally within usable area
         pos_x_abs = scaler.screen_origin_x + (scaler.usable_w - msg_surf.get_width()) // 2
-
-        # Positioned above build menu (which is at bottom of usable area)
         build_menu_top_y_abs = scaler.screen_origin_y + scaler.usable_h - scaler.ui_build_menu_height
         pos_y_abs = build_menu_top_y_abs - msg_surf.get_height() - \
                     scaler.scale_value(cfg.BASE_UI_TUTORIAL_MESSAGE_BOTTOM_OFFSET_Y)
-
-        # Clamp to usable area (especially top)
         top_bar_bottom_y_abs = scaler.screen_origin_y + scaler.ui_top_bar_height
         if pos_y_abs < top_bar_bottom_y_abs + scaler.ui_general_padding:
             pos_y_abs = top_bar_bottom_y_abs + scaler.ui_general_padding
-
-        # Clamp horizontal position to be within usable area fully
         pos_x_abs = max(scaler.screen_origin_x, pos_x_abs)
         pos_x_abs = min(scaler.screen_origin_x + scaler.usable_w - msg_surf.get_width(), pos_x_abs)
-
         screen.blit(msg_surf, (pos_x_abs, pos_y_abs))

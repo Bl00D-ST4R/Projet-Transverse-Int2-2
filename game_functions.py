@@ -90,10 +90,18 @@ class GameState:
         if cfg.DEBUG_MODE: print(f"GAME_STATE: Initialized for {'TUTORIAL' if self.is_tutorial else 'MAIN GAME'} mode.")
 
     def load_ui_icons(self):
-        self.ui_icons['money'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, "icon_money.png"))
-        self.ui_icons['iron'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, "icon_iron.png"))
-        self.ui_icons['energy'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, "icon_energy.png"))
-        self.ui_icons['heart_full'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, "heart_full.png"))
+        money_icon_file = getattr(cfg, 'ICON_FILENAME_MONEY', "icon_money.png")
+        iron_icon_file = getattr(cfg, 'ICON_FILENAME_IRON', "icon_iron.png")
+        energy_icon_file = getattr(cfg, 'ICON_FILENAME_ENERGY', "icon_energy.png")
+        heart_full_file = getattr(cfg, 'ICON_FILENAME_HEART_FULL', "heart_full.png")
+        heart_empty_file = getattr(cfg, 'ICON_FILENAME_HEART_EMPTY', "heart_empty.png")  # Garder si utilisé
+
+        self.ui_icons['money'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, money_icon_file))
+        self.ui_icons['iron'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, iron_icon_file))
+        self.ui_icons['energy'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, energy_icon_file))
+        self.ui_icons['heart_full'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, heart_full_file))
+        self.ui_icons['heart_empty'] = util.load_sprite(os.path.join(cfg.UI_SPRITE_PATH, heart_empty_file))
+
 
     def update_buildable_area_rect(self):
         tile_size = self.scaler.tile_size

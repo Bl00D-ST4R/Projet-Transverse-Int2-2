@@ -206,6 +206,12 @@ STAT_SIZE_MIN_SCALE_FACTOR = "size_min_scale_factor"
 STAT_SIZE_MAX_SCALE_FACTOR = "size_max_scale_factor"
 STAT_HITBOX_SCALE_FACTORS_WH = "hitbox_scale_factors_wh"
 
+ICON_FILENAME_MONEY = "dollar.png" # NOUVEAU (ou gardez "icon_money.png" si c'est le vrai nom)
+ICON_FILENAME_IRON = "metal.png"   # NOUVEAU (ou gardez "icon_iron.png")
+ICON_FILENAME_ENERGY = "bolt.png"  # NOUVEAU (ou gardez "icon_energy.png")
+ICON_FILENAME_HEART_FULL = "heart.png" # NOUVEAU (ou gardez "heart_full.png")
+
+
 # --- STATS DE BASE DES BÂTIMENTS (Coûts, Production, Consommation) ---
 FRAME_COST_MONEY = 10
 GENERATOR_COST_MONEY = 150
