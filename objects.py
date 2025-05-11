@@ -220,8 +220,8 @@ def compute_mortar_launch_angles_rad(relative_target_x, relative_target_y_physic
         if cfg.DEBUG_MODE:
             print(
                 f"  compute_angle: T1={T1:.3f} -> th1={math.degrees(theta1_rad):.1f}°, T2={T2:.3f} -> th2={math.degrees(theta2_rad):.1f}°")
-            print(
-                f"  compute_angle: Angles valides retournés (deg): Haut={math.degrees(high_angle):.1f}°, Bas={(math.degrees(low_angle) if low_angle else 'N/A'):.1f}°")
+            #print(
+                #f"  compute_angle: Angles valides retournés (deg): Haut={math.degrees(high_angle):.1f}°, Bas={(math.degrees(low_angle) if low_angle else 'N/A'):.1f}°")
 
         return high_angle, low_angle
 
@@ -821,7 +821,8 @@ class Turret(GameObject):
                     if angles_rad and angles_rad[0] is not None:
                         self.can_hit_current_target = True
                         self.current_gun_elevation_deg = math.degrees(angles_rad[0])
-                        self.current_gun_elevation_deg = max(30, min(self.current_gun_elevation_deg, 85))
+                        self.current_gun_elevation_deg = self.current_azimuth_deg + 30
+                        #self.current_gun_elevation_deg = max(30, min(self.current_gun_elevation_deg, 85))
                     else:
                         self.can_hit_current_target = False
                         self.current_gun_elevation_deg = 60
@@ -1103,8 +1104,9 @@ class Projectile(GameObject):
             pass
         elif self.is_mortar_shell:
             self.rect.x += self.vx * delta_time;
-            self.rect.y += -self.vy_physics * delta_time
+            self.rect.y += (-self.vy_physics )* delta_time
             self.vy_physics -= self.gravity_scaled * delta_time  # Use self.gravity_scaled
+            self.vy_physics -= G_PHYSICS_SCALED  #application of the gravity
             if self.sprite_scaled_original:
                 angle_rad_traj = math.atan2(self.vy_physics, self.vx)
                 self.sprite = pygame.transform.rotate(self.sprite_scaled_original, math.degrees(-angle_rad_traj))
