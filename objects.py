@@ -6,6 +6,225 @@ import os
 import game_config as cfg
 import utility_functions as util
 
+# --- Global Scaled Gravity ---
+G_PHYSICS_SCALED = 0  # Will be initialized by the scaler once
+
+
+def set_scaled_gravity(scaled_g):
+    global G_PHYSICS_SCALED
+    G_PHYSICS_SCALED = scaled_g
+
+
+# --- Mortar Launch Angle Computation ---
+"""def compute_mortar_launch_angles_rad(relative_target_x, relative_target_y_physics, v0):
+    
+    relative_target_y_physics: y positif est VERS LE HAUT par rapport au lanceur.
+    Returns (high_angle_rad, low_angle_rad) or (single_angle_rad, None) or (None, None)
+    
+    if v0 <= 0: return None, None
+    if G_PHYSICS_SCALED <= 0:
+        if cfg.DEBUG_MODE: print("ERREUR: Gravité scalée est <= 0 dans compute_mortar_launch_angles_rad")
+        return None, None
+
+    if abs(relative_target_x) < 1e-6:  # Tir vertical
+        discriminant_t = v0 ** 2 - 2 * G_PHYSICS_SCALED * relative_target_y_physics
+        if discriminant_t >= 0:
+            if relative_target_y_physics > 0 and v0 ** 2 < 2 * G_PHYSICS_SCALED * relative_target_y_physics:
+                return None, None
+            return math.pi / 2, None
+        else:
+            return None, None
+
+    term_gx2_2v02 = (G_PHYSICS_SCALED * relative_target_x ** 2) / (2 * v0 ** 2)
+    a = term_gx2_2v02
+    b = -relative_target_x
+    c = relative_target_y_physics + term_gx2_2v02
+    discriminant = b ** 2 - 4 * a * c
+
+    if discriminant < -1e-9: return None, None
+
+    if abs(a) < 1e-9:
+        if abs(b) < 1e-9: return None, None
+        T = -c / b
+        theta_rad = math.atan(T)
+        if relative_target_x > 0 and theta_rad < 0: theta_rad += math.pi
+        return theta_rad, None
+
+    sqrt_discriminant = math.sqrt(max(0, discriminant))
+    T1 = (-b + sqrt_discriminant) / (2 * a)
+    T2 = (-b - sqrt_discriminant) / (2 * a)
+    theta1_rad = math.atan(T1)
+    theta2_rad = math.atan(T2)
+
+    valid_angles = []
+    for angle in [theta1_rad, theta2_rad]:
+        if relative_target_x > 0:
+            if angle < 0: angle += math.pi
+            if 0 <= angle <= math.pi / 2:
+                valid_angles.append(angle)
+        # TODO: Gérer relative_target_x < 0 si nécessaire
+
+    if not valid_angles: return None, None
+    if len(valid_angles) == 1: return valid_angles[0], None
+    return max(valid_angles), min(valid_angles)
+"""
+
+
+
+def compute_mortar_launch_angles_rad(relative_target_x, relative_target_y_physics, v0):
+    """
+    Calcule les angles de lancement (élévation) nécessaires pour atteindre une cible.
+    Args:
+        relative_target_x (float): Distance horizontale à la cible depuis le lanceur.
+        relative_target_y_physics (float): Distance verticale à la cible depuis le lanceur
+                                           (Y positif est VERS LE HAUT).
+        v0 (float): Vitesse initiale du projectile (scalée).
+
+    Returns:
+        tuple: (high_angle_rad, low_angle_rad) ou (single_angle_rad, None) ou (None, None).
+               Les angles sont en radians.
+    """
+
+    if v0 <= 0:
+        if cfg.DEBUG_MODE: print("  compute_angle: v0 non positif.")
+        return None, None
+    if G_PHYSICS_SCALED <= 1e-6:  # Pratiquement pas de gravité, tir direct impossible pour y != 0
+        if cfg.DEBUG_MODE: print("  compute_angle: Gravité scalée trop faible ou nulle.")
+        if abs(relative_target_y_physics) > 1e-6 and abs(
+                relative_target_x) > 1e-6:  # Si la cible n'est pas à la même hauteur
+            return None, None  # Ne peut pas atteindre une cible à une hauteur différente sans gravité
+        elif abs(relative_target_x) < 1e-6 and abs(relative_target_y_physics) < 1e-6:  # Cible à (0,0)
+            return 0, None  # Angle 0, vitesse 0 (déjà à la cible)
+        elif abs(relative_target_x) > 1e-6 and abs(relative_target_y_physics) < 1e-6:  # Cible à la même hauteur
+            return 0, None  # Tir horizontal (angle 0)
+
+    # Cas spécial : Tir vertical (cible directement au-dessus ou en dessous)
+    if abs(relative_target_x) < 1e-6:  # Tolérance pour x=0
+        # Pour atteindre y avec un tir vertical : v_final_y^2 = v0_y^2 - 2*g*y
+        # Si on tire tout droit vers le haut, v0_y = v0.
+        # Si la cible est au-dessus (relative_target_y_physics > 0):
+        # On a besoin de v0^2 >= 2 * G_PHYSICS_SCALED * relative_target_y_physics
+        if v0 ** 2 >= 2 * G_PHYSICS_SCALED * relative_target_y_physics:
+            # Vérifier si on veut vraiment permettre de tirer sur une cible en dessous avec un tir "vertical"
+            # Normalement, un mortier tire vers le haut.
+            # Si relative_target_y_physics est négatif, mais v0^2 - 2*g*y est positif, cela signifie qu'on pourrait l'atteindre en retombant.
+            if cfg.DEBUG_MODE: print(
+                f"  compute_angle: Tir vertical, angle pi/2 (90 deg). disc_t_check: {v0 ** 2 - 2 * G_PHYSICS_SCALED * relative_target_y_physics}")
+            return math.pi / 2, None  # 90 degrés
+        else:
+            if cfg.DEBUG_MODE: print(
+                f"  compute_angle: Tir vertical, cible trop haute. disc_t_check: {v0 ** 2 - 2 * G_PHYSICS_SCALED * relative_target_y_physics}")
+            return None, None
+
+    # Équation quadratique pour T = tan(theta): aT^2 + bT + c = 0
+    # a = (G * x^2) / (2 * v0^2)
+    # b = -x
+    # c = y + (G * x^2) / (2 * v0^2)
+
+    # Terme commun pour simplifier
+    # Vérifier que v0 n'est pas nul pour éviter la division par zéro ici aussi
+    if abs(v0) < 1e-6: return None, None
+
+    term_gx2_div_2v02 = (G_PHYSICS_SCALED * relative_target_x ** 2) / (2 * v0 ** 2)
+
+    a = term_gx2_div_2v02
+    b = -relative_target_x
+    c = relative_target_y_physics + term_gx2_div_2v02
+
+    discriminant = b ** 2 - 4 * a * c
+
+    if cfg.DEBUG_MODE and abs(
+            discriminant) > 1e-7:  # N'afficher que si significativement différent de zéro pour ne pas spammer
+        print(f"  compute_angle: a={a:.3f}, b={b:.3f}, c={c:.3f}, discriminant={discriminant:.3f}")
+
+    if discriminant < -1e-9:  # Tolérance pour les erreurs de flottants, si c'est négatif -> pas de solution réelle
+        if cfg.DEBUG_MODE: print(f"  compute_angle: Discriminant < 0 ({discriminant:.3f}), cible hors de portée.")
+        return None, None
+
+    # Si a est très proche de zéro (par exemple, si G est très petit ou v0 très grand)
+    # l'équation se rapproche d'une équation linéaire : bT + c = 0
+    if abs(a) < 1e-9:
+        if abs(b) < 1e-9:  # Si b aussi est proche de zéro (si target_x est aussi proche de zéro, déjà géré)
+            if cfg.DEBUG_MODE: print("  compute_angle: a et b proches de zéro, cas dégénéré.")
+            return None, None
+        T = -c / b
+        theta_rad = math.atan(T)
+        # Ajustement pour s'assurer que l'angle est dans le bon quadrant pour un tir vers l'avant
+        if relative_target_x > 0 and theta_rad < 0:  # Si x > 0, on s'attend à un angle positif (0 à pi/2)
+            theta_rad += math.pi  # Le mettre dans le deuxième quadrant, pas typique pour un mortier
+            # Cela arrive si tan(theta) est négatif.
+        # Pour un mortier tirant vers l'avant, on veut 0 <= theta <= pi/2
+        if not (0 <= theta_rad <= math.pi / 2) and relative_target_x > 0:
+            if cfg.DEBUG_MODE: print(
+                f"  compute_angle (linéaire): Angle {math.degrees(theta_rad):.1f} hors de [0,90] pour x>0.")
+            return None, None
+
+        if cfg.DEBUG_MODE: print(
+            f"  compute_angle: Cas linéaire (a~0), T={T:.3f}, theta={math.degrees(theta_rad):.1f}°")
+        return theta_rad, None
+
+    # Deux solutions réelles (ou une si discriminant est proche de zéro)
+    # Pour la robustesse numérique, si discriminant est très petit mais positif, le traiter comme nul.
+    if abs(discriminant) < 1e-9:  # Discriminant est effectivement zéro
+        T = -b / (2 * a)
+        theta_rad = math.atan(T)
+        if relative_target_x > 0 and theta_rad < 0: theta_rad += math.pi  # Ajustement
+        if not (0 <= theta_rad <= math.pi / 2) and relative_target_x > 0:
+            if cfg.DEBUG_MODE: print(
+                f"  compute_angle (disc~0): Angle {math.degrees(theta_rad):.1f} hors de [0,90] pour x>0.")
+            return None, None
+        if cfg.DEBUG_MODE: print(f"  compute_angle: Discriminant ~0, T={T:.3f}, theta={math.degrees(theta_rad):.1f}°")
+        return theta_rad, None
+    else:  # Deux solutions distinctes
+        sqrt_discriminant = math.sqrt(discriminant)  # discriminant est positif ici
+        T1 = (-b + sqrt_discriminant) / (2 * a)  # Souvent l'angle le plus élevé
+        T2 = (-b - sqrt_discriminant) / (2 * a)  # Souvent l'angle le plus bas
+
+        theta1_rad = math.atan(T1)
+        theta2_rad = math.atan(T2)
+
+        # Filtrer et ajuster les angles pour un tir de mortier typique (vers l'avant, vers le haut)
+        valid_angles = []
+        for angle_rad_candidate in [theta1_rad, theta2_rad]:
+            # Pour un tir vers l'avant (relative_target_x > 0), on s'attend à ce que tan(theta) soit positif,
+            # donc theta devrait être entre 0 et pi/2.
+            # math.atan retourne entre -pi/2 et pi/2.
+            if relative_target_x > 0:
+                if angle_rad_candidate < 0:  # Si tan(theta) était négatif, atan retourne angle négatif.
+                    # Cela signifie que la cible est "en dessous" de la parabole directe.
+                    # Pour un mortier, ce n'est généralement pas une solution souhaitée.
+                    # On pourrait l'ignorer ou l'ajuster, mais pour un mortier on veut un tir "vers le haut".
+                    # Si on l'ajoute avec +math.pi, il sera > pi/2.
+                    # angle_rad_candidate += math.pi
+                    pass  # Ignorer les angles initiaux négatifs pour un tir avant
+
+                if 0 <= angle_rad_candidate <= math.pi / 2 + 1e-3:  # Angle entre 0 et 90 degrés (avec petite tolérance)
+                    valid_angles.append(angle_rad_candidate)
+
+            # TODO: Gérer le cas relative_target_x < 0 (tirer en arrière) si nécessaire.
+            # Cela impliquerait des angles entre pi/2 et pi.
+
+        if not valid_angles:
+            if cfg.DEBUG_MODE: print(
+                f"  compute_angle: Aucune solution d'angle valide [0,90] trouvée pour T1={T1:.2f}, T2={T2:.2f}")
+            return None, None
+
+        # Retourner (angle haut, angle bas) parmi les valides
+        # L'angle le plus élevé correspond généralement à tan(theta) le plus élevé (pour theta dans [0, pi/2])
+        high_angle = max(valid_angles)
+        low_angle = min(valid_angles) if len(valid_angles) > 1 else None
+
+        if low_angle is not None and abs(high_angle - low_angle) < 1e-6:  # Si les deux angles sont quasi identiques
+            low_angle = None
+
+        if cfg.DEBUG_MODE:
+            print(
+                f"  compute_angle: T1={T1:.3f} -> th1={math.degrees(theta1_rad):.1f}°, T2={T2:.3f} -> th2={math.degrees(theta2_rad):.1f}°")
+            print(
+                f"  compute_angle: Angles valides retournés (deg): Haut={math.degrees(high_angle):.1f}°, Bas={(math.degrees(low_angle) if low_angle else 'N/A'):.1f}°")
+
+        return high_angle, low_angle
+
 # --- Définitions des Stats des Objets ---
 BUILDING_STATS = {
     "frame": {
@@ -27,7 +246,7 @@ BUILDING_STATS = {
     },
     "miner": {
         cfg.STAT_COST_MONEY: cfg.MINER_COST_MONEY,
-        # cfg.STAT_COST_IRON: cfg.MINER_COST_IRON, # Supprimé (ou mis à 0 dans game_config.py)
+        # cfg.STAT_COST_IRON: cfg.MINER_COST_IRON, # Iron cost for building miner is now 0 via config
         cfg.STAT_POWER_CONSUMPTION: cfg.MINER_POWER_CONSUMPTION,
         cfg.STAT_IRON_PRODUCTION_PM: cfg.MINER_IRON_PRODUCTION_PM,
         cfg.STAT_SPRITE_VARIANTS_DICT: {
@@ -319,6 +538,15 @@ class Turret(GameObject):
     def __init__(self, turret_type, pixel_pos_center, grid_pos_tuple, scaler: util.Scaler):
         super().__init__()
         self.scaler = scaler
+        if G_PHYSICS_SCALED == 0 and hasattr(self.scaler, 'gravity'):
+            set_scaled_gravity(self.scaler.gravity)
+        elif G_PHYSICS_SCALED == 0 and cfg.DEBUG_MODE:
+            print("AVERTISSEMENT: G_PHYSICS_SCALED non initialisé, scaler.gravity non trouvé à temps.")
+            if hasattr(self.scaler, 'general_scale_factor'):
+                set_scaled_gravity(abs(cfg.BASE_GRAVITY_PHYSICS * self.scaler.general_scale_factor))
+            else:
+                set_scaled_gravity(abs(cfg.BASE_GRAVITY_PHYSICS))
+
         Turret._id_counter += 1;
         self.id = Turret._id_counter
         self.type = turret_type;
@@ -348,6 +576,11 @@ class Turret(GameObject):
         self.is_firing_animation = False
         self.firing_animation_timer = 0.0
         self.firing_animation_duration = 0.2
+
+        self.current_visual_angle_deg = -90  # Angle visuel initial (ex: pointe vers le haut si 0 est à droite)
+        self.current_azimuth_deg = 0  # Angle horizontal de la base/direction générale
+        self.current_gun_elevation_deg = 60  # Angle d'élévation visuel et de tir du canon (défaut)
+        self.can_hit_current_target = False
 
         base_sprite_name = self.stats.get(cfg.STAT_TURRET_BASE_SPRITE_NAME, "turret_base_placeholder.png")
         self.original_turret_base_sprite = util.load_sprite(os.path.join(cfg.TURRET_SPRITE_PATH, base_sprite_name))
@@ -439,7 +672,6 @@ class Turret(GameObject):
             self.gun_pivot_offset_in_gun_sprite = (0, 0)
 
         self.target_enemy = None;
-        self.current_angle_deg = 0;
         self.is_functional = True
         self._update_gun_sprite_visuals()
 
@@ -520,32 +752,45 @@ class Turret(GameObject):
                 self.gun_sprite_scaled_original = pygame.Surface((fb_w, fb_h), pygame.SRCALPHA);
                 self.gun_sprite_scaled_original.fill(cfg.COLOR_GREEN + (180,))
                 self.gun_pivot_offset_in_gun_sprite = (
-                self.gun_sprite_scaled_original.get_width() // 2, self.gun_sprite_scaled_original.get_height() // 2)
+                    self.gun_sprite_scaled_original.get_width() // 2,
+                    self.gun_sprite_scaled_original.get_height() // 2)
 
         if self.gun_sprite_scaled_original:
-            self.gun_sprite_rotated = pygame.transform.rotate(self.gun_sprite_scaled_original, self.current_angle_deg)
+            # Utilise self.current_visual_angle_deg qui a été mis à jour dans Turret.update
+            self.gun_sprite_rotated = pygame.transform.rotate(self.gun_sprite_scaled_original,
+                                                              self.current_visual_angle_deg)
+
         else:
             self.gun_sprite_rotated = None
             if cfg.DEBUG_MODE: print(f"ERREUR: gun_sprite_scaled_original est None après update pour {self.type}")
-
 
     def update(self, delta_time, enemies_list, is_powered_globally, game_state_ref, scaler: util.Scaler):
         super().update(delta_time, game_state_ref, scaler)
         self.set_active_state(is_powered_globally)
 
+        target_acquired_or_changed_this_frame = False
+        old_target_id = self.target_enemy.id if self.target_enemy else None
+
+        if not self.target_enemy or not self.target_enemy.active or not hasattr(self.target_enemy, 'rect'):
+            self.find_target(enemies_list)
+            if (self.target_enemy and old_target_id != self.target_enemy.id) or \
+                    (not self.target_enemy and old_target_id is not None) or \
+                    (self.target_enemy and old_target_id is None):
+                target_acquired_or_changed_this_frame = True
+
+        visual_update_needed_for_sprite_type = False
         current_iron_check = (game_state_ref.iron_stock >= self.iron_cost_per_shot) or (self.iron_cost_per_shot == 0)
-        visual_update_needed = False
         if self.has_sufficient_iron != current_iron_check:
             self.has_sufficient_iron = current_iron_check;
-            visual_update_needed = True
+            visual_update_needed_for_sprite_type = True
 
         if self.is_firing_animation:
             self.firing_animation_timer -= delta_time
             if self.firing_animation_timer <= 0:
                 self.is_firing_animation = False;
-                visual_update_needed = True
+                visual_update_needed_for_sprite_type = True
 
-        if visual_update_needed and not (
+        if visual_update_needed_for_sprite_type and not (
                 self.is_flamethrower and self.is_flaming_active) and not self.is_firing_animation:
             self._update_gun_sprite_visuals()
 
@@ -556,53 +801,83 @@ class Turret(GameObject):
                 self._update_gun_sprite_visuals()
             return
 
-        old_angle = self.current_angle_deg
-        if not self.target_enemy or not self.target_enemy.active or not hasattr(self.target_enemy, 'rect'):
-            self.find_target(enemies_list)
+        old_azimuth_deg = self.current_azimuth_deg
 
-        aim_this_frame = False
         if self.target_enemy and hasattr(self.target_enemy, 'rect'):
-            aim_this_frame = True
-            dx = self.target_enemy.rect.centerx - self.rect.centerx;
-            dy = self.target_enemy.rect.centery - self.rect.centery
-            self.current_angle_deg = math.degrees(math.atan2(-dy, dx))
-        elif self.is_flamethrower and self.is_flaming_active:
-            aim_this_frame = True
+            dx_target = self.target_enemy.rect.centerx - self.rect.centerx
+            dy_target_pygame = self.target_enemy.rect.centery - self.rect.centery
 
-        if aim_this_frame and not self.is_firing_animation:
-            if self.current_angle_deg != old_angle or self.gun_sprite_rotated is None: self._update_gun_sprite_visuals()
+            new_azimuth_deg = math.degrees(math.atan2(-dy_target_pygame, dx_target))
+            if abs(new_azimuth_deg - self.current_azimuth_deg) > 0.5:
+                target_acquired_or_changed_this_frame = True
+            self.current_azimuth_deg = new_azimuth_deg  # This is the primary aiming direction (azimuth)
 
-        if not self.has_sufficient_iron and not (self.is_flamethrower and self.is_flaming_active): return
+            if self.type == "mortar_turret":
+                if target_acquired_or_changed_this_frame:
+                    relative_target_y_physics = -dy_target_pygame
+                    v0_mortar = self.projectile_initial_speed
+                    angles_rad = compute_mortar_launch_angles_rad(dx_target, relative_target_y_physics, v0_mortar)
 
-        if self.is_flamethrower:
-            if self.is_flaming_active:
-                self.flame_duration_timer -= delta_time
-                if self.flame_duration_timer <= 0:
-                    self.is_flaming_active = False;
-                    self.flame_cooldown_timer = self.flame_cooldown_max
-                    self._update_gun_sprite_visuals()
-                else:
-                    self.current_cooldown -= delta_time
-                    if self.current_cooldown <= 0: self.shoot(game_state_ref); self.current_cooldown = 0.1
+                    if angles_rad and angles_rad[0] is not None:
+                        self.can_hit_current_target = True
+                        self.current_gun_elevation_deg = math.degrees(angles_rad[0])
+                        self.current_gun_elevation_deg = max(30, min(self.current_gun_elevation_deg, 85))
+                    else:
+                        self.can_hit_current_target = False
+                        self.current_gun_elevation_deg = 60
+                        if cfg.DEBUG_MODE and target_acquired_or_changed_this_frame:
+                            print(
+                                f"Mortar ({self.id}): Cible ({self.target_enemy.id if self.target_enemy else 'None'}) hors de portée balistique.")
+                self.current_visual_angle_deg = self.current_azimuth_deg  # Mortar visual angle is its azimuth
             else:
-                self.flame_cooldown_timer -= delta_time
-                if self.flame_cooldown_timer <= 0 and self.target_enemy and self.has_sufficient_iron:
-                    self.is_flaming_active = True;
-                    self.flame_duration_timer = self.flame_duration_max
-                    self._update_gun_sprite_visuals();
-                    self.current_cooldown = 0
+                self.can_hit_current_target = True
+                self.current_gun_elevation_deg = 0
+                self.current_visual_angle_deg = self.current_azimuth_deg  # Other turrets' visual angle is their azimuth
+
+            if (
+                    self.current_visual_angle_deg != old_azimuth_deg or self.gun_sprite_rotated is None) and not self.is_firing_animation:
+                self._update_gun_sprite_visuals()
+
         else:
-            self.current_cooldown -= delta_time
-            if self.current_cooldown <= 0 and self.target_enemy and self.has_sufficient_iron:
-                self.shoot(game_state_ref);
-                self.current_cooldown = self.cooldown_time_seconds
-                if self.type == "sniper_turret" and self.original_gun_sprite_firing:
-                    self.is_firing_animation = True;
-                    self.firing_animation_timer = self.firing_animation_duration
-                    self._update_gun_sprite_visuals()
+            self.can_hit_current_target = False
+            if self.type == "mortar_turret":
+                self.current_visual_angle_deg = 45
+                self.current_gun_elevation_deg = 75
+
+            if (
+                    self.current_visual_angle_deg != old_azimuth_deg or self.gun_sprite_rotated is None) and not self.is_firing_animation:
+                self._update_gun_sprite_visuals()
+
+        if self.has_sufficient_iron:
+            if self.is_flamethrower:
+                if self.is_flaming_active:
+                    self.flame_duration_timer -= delta_time
+                    if self.flame_duration_timer <= 0:
+                        self.is_flaming_active = False;
+                        self.flame_cooldown_timer = self.flame_cooldown_max
+                        self._update_gun_sprite_visuals()
+                    else:
+                        self.current_cooldown -= delta_time
+                        if self.current_cooldown <= 0: self.shoot(game_state_ref); self.current_cooldown = 0.1
+                else:
+                    self.flame_cooldown_timer -= delta_time
+                    if self.flame_cooldown_timer <= 0 and self.target_enemy and self.has_sufficient_iron:
+                        self.is_flaming_active = True;
+                        self.flame_duration_timer = self.flame_duration_max
+                        self._update_gun_sprite_visuals();
+                        self.current_cooldown = 0
+            else:
+                self.current_cooldown -= delta_time
+                if self.current_cooldown <= 0 and self.target_enemy and self.has_sufficient_iron and self.can_hit_current_target:
+                    self.shoot(game_state_ref)
+                    self.current_cooldown = self.cooldown_time_seconds
+                    if self.type == "sniper_turret" and self.original_gun_sprite_firing:
+                        self.is_firing_animation = True;
+                        self.firing_animation_timer = self.firing_animation_duration
+                        self._update_gun_sprite_visuals()
 
         new_has_iron_after_shot = (game_state_ref.iron_stock >= self.iron_cost_per_shot) or (
-                self.iron_cost_per_shot == 0)
+                    self.iron_cost_per_shot == 0)
         if self.has_sufficient_iron and not new_has_iron_after_shot and not self.is_firing_animation:
             self.has_sufficient_iron = False;
             self._update_gun_sprite_visuals()
@@ -621,34 +896,28 @@ class Turret(GameObject):
                     self.iron_cost_per_shot == 0)
 
         pivot_screen_x, pivot_screen_y = self.rect.centerx, self.rect.centery
-        cannon_length_from_pivot = 0
-        if self.gun_sprite_scaled_original and self.gun_pivot_offset_in_gun_sprite:
-            if self.type == "machine_gun_turret":
-                # Supposons que self.gun_sprite_scaled_original est le sprite du canon
-                # et que son point de pivot est son centre (width/2, height/2).
-                # La longueur effective du canon depuis le pivot jusqu'au bout.
-                # Si votre sprite de canon est dessiné avec son origine au pivot et s'étend vers la droite,
-                # alors la longueur est la moitié de sa largeur.
-                effective_cannon_length = self.gun_sprite_scaled_original.get_width() / 4
-            elif self.is_flamethrower:  # Le lance-flamme pourrait avoir une origine de flamme différente
-                effective_cannon_length = self.gun_sprite_scaled_original.get_width() * 0.4  # Exemple, un peu en avant du centre
-            else:  # Pour mortier, sniper, etc.
-                # Si le pivot est au centre, et le canon s'étend sur toute la largeur
-                effective_cannon_length = self.gun_sprite_scaled_original.get_width() / 2
-                # Si le pivot était à gauche (0.25 * width), alors ce serait :
-                # effective_cannon_length = self.gun_sprite_scaled_original.get_width() * (1 - 0.25)
-                # Mais on a changé le pivot au centre pour toutes les tourelles.
+        proj_origin_x, proj_origin_y = pivot_screen_x, pivot_screen_y
 
-            proj_origin_x = pivot_screen_x + math.cos(math.radians(self.current_angle_deg)) * effective_cannon_length
-            proj_origin_y = pivot_screen_y - math.sin(math.radians(self.current_angle_deg)) * effective_cannon_length
+        if self.type == "mortar_turret":
+            proj_origin = (pivot_screen_x, pivot_screen_y)  # Mortar projectile originates from base center
+        else:
+            effective_cannon_length = 0
+            if self.gun_sprite_scaled_original:
+                # Pivot is at center of gun sprite, so effective length to tip is half width
+                effective_cannon_length = self.gun_sprite_scaled_original.get_width() / 2
+
+            # Use current_azimuth_deg for projectile origin calculation for direct fire turrets
+            angle_for_proj_origin_deg = self.current_azimuth_deg
+
+            proj_origin_x = pivot_screen_x + math.cos(math.radians(angle_for_proj_origin_deg)) * effective_cannon_length
+            proj_origin_y = pivot_screen_y - math.sin(math.radians(angle_for_proj_origin_deg)) * effective_cannon_length
             proj_origin = (proj_origin_x, proj_origin_y)
-        proj_origin = (proj_origin_x, proj_origin_y)
 
         if self.is_flamethrower:
             num_flame_particles = 3
             for _ in range(num_flame_particles):
                 dispersion = random.uniform(-15, 15);
-                flame_angle = self.current_angle_deg + dispersion
+                flame_angle = self.current_azimuth_deg + dispersion
                 new_proj = Projectile("flame_particle", proj_origin, flame_angle, self.scaler)
                 game_state_ref.projectiles.append(new_proj)
             return
@@ -656,18 +925,33 @@ class Turret(GameObject):
         if not self.target_enemy or not self.target_enemy.active: return
 
         if self.type == "mortar_turret":
-            fire_solution = calculate_mortar_fire_solution(self.rect.center, self.target_enemy.rect.center,
-                                                           self.projectile_initial_speed, self.scaler.gravity)
-            if fire_solution:
-                launch_angle_vert, _ = fire_solution;
-                angle_horiz_rad = math.radians(self.current_angle_deg)
-                vy_phys = self.projectile_initial_speed * math.sin(launch_angle_vert)
-                h_speed_comp = self.projectile_initial_speed * math.cos(launch_angle_vert)
-                vx = h_speed_comp * math.cos(angle_horiz_rad);
-                vy_pg = -vy_phys
-                new_proj = Projectile(self.projectile_type, proj_origin, 0, self.scaler, initial_vx=vx,
-                                      initial_vy=vy_pg)
-                game_state_ref.projectiles.append(new_proj)
+            if not self.can_hit_current_target:
+                if cfg.DEBUG_MODE: print(f"Mortar ({self.id}): Tentative de tir sans solution valide.")
+                return
+
+            launch_angle_rad_vertical = math.radians(self.current_gun_elevation_deg)
+            angle_azimuth_rad = math.radians(self.current_azimuth_deg)
+            v0 = self.projectile_initial_speed
+
+            initial_vy_physics = v0 * math.sin(launch_angle_rad_vertical)
+            speed_on_horizontal_plane = v0 * math.cos(launch_angle_rad_vertical)
+            initial_vx_world = speed_on_horizontal_plane * math.cos(angle_azimuth_rad)
+
+            if cfg.DEBUG_MODE: print(f"  Mortar Calculated Speeds: Vx_world={initial_vx_world:.2f}, V0y_physics_for_launch={initial_vy_physics:.2f}")
+
+            current_proj_origin = self.rect.center
+
+            new_proj = Projectile(
+                self.projectile_type, current_proj_origin,
+                0,
+                self.scaler,
+                initial_vx=initial_vx_world,
+                initial_vy=-initial_vy_physics
+            )
+            game_state_ref.projectiles.append(new_proj)
+            if cfg.DEBUG_MODE: print(
+                f"  Mortar ({self.id}) Fired. Azimuth: {math.degrees(angle_azimuth_rad):.1f}°, Elevation: {self.current_gun_elevation_deg:.1f}°")
+
         elif self.projectile_type == "machine_gun_beam":
             if self.target_enemy and self.target_enemy.active:
                 dmg = PROJECTILE_STATS["machine_gun_beam"].get(cfg.STAT_DAMAGE_AMOUNT, 0)
@@ -675,11 +959,11 @@ class Turret(GameObject):
                 if not self.target_enemy.active and hasattr(game_state_ref, 'money'):
                     game_state_ref.money += self.target_enemy.get_money_value();
                     game_state_ref.score += self.target_enemy.get_score_value()
-                beam_proj = Projectile(self.projectile_type, proj_origin, self.current_angle_deg, self.scaler,
+                beam_proj = Projectile(self.projectile_type, proj_origin, self.current_azimuth_deg, self.scaler,
                                        target_pos_for_beam=self.target_enemy.rect.center)
                 game_state_ref.projectiles.append(beam_proj)
-        else:
-            new_proj = Projectile(self.projectile_type, proj_origin, self.current_angle_deg, self.scaler)
+        else:  # Sniper
+            new_proj = Projectile(self.projectile_type, proj_origin, self.current_azimuth_deg, self.scaler)
             game_state_ref.projectiles.append(new_proj)
 
     def set_active_state(self, is_powered):
@@ -689,8 +973,17 @@ class Turret(GameObject):
         if not self.active:
             return
 
-        if self.turret_base_sprite_scaled:
-            surface.blit(self.turret_base_sprite_scaled, self.rect.topleft)
+        current_base_sprite_to_draw = self.turret_base_sprite_scaled
+        base_draw_rect = self.rect
+
+        if self.type == "mortar_turret":
+            if self.turret_base_sprite_scaled:
+                rotated_base_sprite = pygame.transform.rotate(self.turret_base_sprite_scaled, self.current_azimuth_deg)
+                base_draw_rect = rotated_base_sprite.get_rect(center=self.rect.center)
+                current_base_sprite_to_draw = rotated_base_sprite
+
+        if current_base_sprite_to_draw:
+            surface.blit(current_base_sprite_to_draw, base_draw_rect.topleft)
         elif cfg.DEBUG_MODE:
             pygame.draw.circle(surface, cfg.COLOR_CYAN, self.rect.center, self.scaler.tile_size // 3, 2)
 
@@ -702,12 +995,12 @@ class Turret(GameObject):
             offset_pivot_from_center_x = pivot_in_scaled_orig_x - self.gun_sprite_scaled_original.get_width() / 2
             offset_pivot_from_center_y = pivot_in_scaled_orig_y - self.gun_sprite_scaled_original.get_height() / 2
 
-            angle_rad_math = -math.radians(self.current_angle_deg)
+            angle_rad_math_visual = -math.radians(self.current_visual_angle_deg)
 
             rotated_offset_x = offset_pivot_from_center_x * math.cos(
-                angle_rad_math) - offset_pivot_from_center_y * math.sin(angle_rad_math)
+                angle_rad_math_visual) - offset_pivot_from_center_y * math.sin(angle_rad_math_visual)
             rotated_offset_y = offset_pivot_from_center_x * math.sin(
-                angle_rad_math) + offset_pivot_from_center_y * math.cos(angle_rad_math)
+                angle_rad_math_visual) + offset_pivot_from_center_y * math.cos(angle_rad_math_visual)
 
             rotated_sprite_center_x = pivot_screen_pos[0] - rotated_offset_x
             rotated_sprite_center_y = pivot_screen_pos[1] - rotated_offset_y
@@ -722,7 +1015,7 @@ class Turret(GameObject):
         elif cfg.DEBUG_MODE:
             if self.gun_sprite_scaled_original:
                 temp_rotated_fallback = pygame.transform.rotate(self.gun_sprite_scaled_original,
-                                                                self.current_angle_deg)
+                                                                self.current_visual_angle_deg)
                 fb_gun_rect = temp_rotated_fallback.get_rect(center=self.rect.center)
                 surface.blit(temp_rotated_fallback, fb_gun_rect.topleft)
             else:
@@ -753,7 +1046,9 @@ class Projectile(GameObject):
         self.speed = self.scaler.scale_value(self.stats.get(cfg.STAT_PROJECTILE_FLAT_SPEED_PIXELS, 0))
         self.aoe_radius = self.scaler.scale_value(self.stats.get(cfg.STAT_AOE_RADIUS_PIXELS, 0))
         self.lifetime_seconds = self.stats.get(cfg.STAT_PROJECTILE_LIFETIME_SEC, 5.0)
-        self.gravity_scaled = self.scaler.gravity
+        self.gravity_scaled = self.scaler.gravity  # Should be G_PHYSICS_SCALED if it's set
+        if G_PHYSICS_SCALED != 0: self.gravity_scaled = G_PHYSICS_SCALED
+
         self.is_beam = self.stats.get(cfg.STAT_PROJECTILE_IS_BEAM, False)
         self.beam_color = self.stats.get(cfg.STAT_PROJECTILE_BEAM_COLOR, cfg.COLOR_YELLOW)
         self.beam_target_pos = target_pos_for_beam;
@@ -809,7 +1104,7 @@ class Projectile(GameObject):
         elif self.is_mortar_shell:
             self.rect.x += self.vx * delta_time;
             self.rect.y += -self.vy_physics * delta_time
-            self.vy_physics -= self.gravity_scaled * delta_time
+            self.vy_physics -= self.gravity_scaled * delta_time  # Use self.gravity_scaled
             if self.sprite_scaled_original:
                 angle_rad_traj = math.atan2(self.vy_physics, self.vx)
                 self.sprite = pygame.transform.rotate(self.sprite_scaled_original, math.degrees(-angle_rad_traj))
