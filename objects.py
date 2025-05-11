@@ -276,7 +276,7 @@ ENEMY_STATS = {
         cfg.STAT_DAMAGE_TO_CITY: cfg.ENEMY1_DAMAGE_TO_CITY,
         cfg.STAT_SCORE_POINTS_VALUE: cfg.ENEMY1_SCORE_POINTS_VALUE,
         cfg.STAT_MONEY_DROP_VALUE: cfg.ENEMY1_MONEY_DROP_VALUE,
-        cfg.STAT_SPRITE_DEFAULT_NAME: "enemy_basic_sketch.png",
+        cfg.STAT_SPRITE_DEFAULT_NAME: "Ennemy1.png",
         cfg.STAT_SIZE_MIN_SCALE_FACTOR: 0.8, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.2,
         cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.8, 0.8)
     },
@@ -286,7 +286,7 @@ ENEMY_STATS = {
         cfg.STAT_DAMAGE_TO_CITY: cfg.ENEMY2_DAMAGE_TO_CITY,
         cfg.STAT_SCORE_POINTS_VALUE: cfg.ENEMY2_SCORE_POINTS_VALUE,
         cfg.STAT_MONEY_DROP_VALUE: cfg.ENEMY2_MONEY_DROP_VALUE,
-        cfg.STAT_SPRITE_DEFAULT_NAME: "enemy_fast.png",
+        cfg.STAT_SPRITE_DEFAULT_NAME: "enemy_basic_sketch.png",
         cfg.STAT_SIZE_MIN_SCALE_FACTOR: 0.7, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.0,
         cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.7, 0.9)
     },
@@ -296,7 +296,7 @@ ENEMY_STATS = {
         cfg.STAT_DAMAGE_TO_CITY: cfg.ENEMY3_DAMAGE_TO_CITY,
         cfg.STAT_SCORE_POINTS_VALUE: cfg.ENEMY3_SCORE_POINTS_VALUE,
         cfg.STAT_MONEY_DROP_VALUE: cfg.ENEMY3_MONEY_DROP_VALUE,
-        cfg.STAT_SPRITE_DEFAULT_NAME: "enemy_tank.png",
+        cfg.STAT_SPRITE_DEFAULT_NAME: "EnnemyBoos.png",
         cfg.STAT_SIZE_MIN_SCALE_FACTOR: 1.3, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.6,
         cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.9, 0.9)
     },
@@ -577,7 +577,7 @@ class Turret(GameObject):
         self.firing_animation_timer = 0.0
         self.firing_animation_duration = 0.2
 
-        self.current_visual_angle_deg = -90  # Angle visuel initial (ex: pointe vers le haut si 0 est à droite)
+        self.current_visual_angle_deg = 0  # Angle visuel initial (ex: pointe vers le haut si 0 est à droite)
         self.current_azimuth_deg = 0  # Angle horizontal de la base/direction générale
         self.current_gun_elevation_deg = 60  # Angle d'élévation visuel et de tir du canon (défaut)
         self.can_hit_current_target = False
