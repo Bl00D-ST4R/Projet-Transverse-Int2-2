@@ -304,6 +304,30 @@ ENEMY3_DAMAGE_TO_CITY = 25
 ENEMY3_SCORE_POINTS_VALUE = 50
 ENEMY3_MONEY_DROP_VALUE = 20
 
+# Kamikaze Plane Stats
+KAMIKAZE_DIVE_TRIGGER_DISTANCE_BASE = 700 # Distance de base (en pixels de référence) pour déclencher la plongée
+KAMIKAZE_HORIZONTAL_SPEED_BASE = 70      # Vitesse horizontale de base
+KAMIKAZE_DIVE_ACCELERATION_X_BASE = 5    # Accélération horizontale pendant la plongée (pour vitesse croissante)
+KAMIKAZE_MAX_DIVE_SPEED_X_BASE = 200     # Vitesse horizontale maximale en plongée
+KAMIKAZE_HP_BASE = 75
+KAMIKAZE_CITY_DAMAGE_BASE = 0 # Ne fait pas de dégâts à la ville s'il la traverse
+KAMIKAZE_MONEY_DROP_BASE = 25
+KAMIKAZE_SCORE_BASE = 50
+
+# Noms des sprites pour Kamikaze
+KAMIKAZE_SPRITE_NORMAL_FLIGHT = "kamikaze_plane_horizontal.png"
+KAMIKAZE_SPRITE_DIVING = "kamikaze_plane_diving.png"
+
+# Ruines
+RUIN_SPRITE_NAME = "destroyed_building.png" # À créer (dans assets/buildings/)
+
+# Clés de Stats (si vous en ajoutez de nouvelles spécifiques au kamikaze)
+# Pas besoin de nouvelles clés STAT_ si on utilise les existantes pour HP, speed, etc.
+
+# UI Feedback pour déficit d'énergie
+POWER_WARNING_TEXT_COLOR = COLOR_RED # Ou une autre couleur d'alerte
+POWER_WARNING_FONT_SIZE_KEY = 'medium' # Utiliser 'small', 'medium', ou 'large' du scaler
+
 # --- Taille des Sprites et Hitbox et autres params d'objets---
 GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER = 0.5
 BASE_PROJECTILE_SPRITE_SCALE_FACTOR = 0.2
