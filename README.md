@@ -7,4 +7,13 @@ Contributors : Gonié Louis, Lieske Gaspard, Lemont Mathis, Mora Emiliano, Evan 
 
 Quick description : "Last stand 1941" is a base 2D building/tower defense game made with Pygame. The goal is to survive multiple waves of ennemies, coming from the right side of the screen. To do so, you have to collect and manage your ressources, to build turrets.  
 
+Functionalities : 
+
+
+Workcharge distribution :
+  Mathis : Ui implementation, design, artworks, concept
+  Louis : Notion/Monday, Powerpoint, Debugging, concept
+  Gaspard : Documentation, Programming, concept
+  Emiliano : 
+  Evan : Documentation, Programming, concept
 
