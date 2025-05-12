@@ -74,7 +74,7 @@ BASE_FONT_SIZE_XLARGE = 48
 BASE_FONT_SIZE_TITLE = 60
 
 # --- Physique (Base) ---
-BASE_GRAVITY_PHYSICS = 9.81
+BASE_GRAVITY_PHYSICS = 9.81 #utilisée pour les equation de trajectoire
 
 # --- Couleurs ---
 COLOR_BLACK = (0, 0, 0)
@@ -133,7 +133,7 @@ COLOR_TUTORIAL_TEXT = COLOR_WHITE
 COLOR_TUTORIAL_BG = (20, 20, 80, 200)
 
 # --- Ressources et Paramètres de Jeu ---
-INITIAL_MONEY = 100000
+INITIAL_MONEY = 10000
 INITIAL_IRON = 200
 BASE_IRON_CAPACITY = 500
 INITIAL_CITY_HP = 100
@@ -153,6 +153,7 @@ SOUND_PATH = os.path.join(ASSET_PATH, "sounds/")
 MUSIC_PATH = os.path.join(ASSET_PATH, "music/")
 
 # --- Polices ---
+#non utilisé pour le moment
 FONT_NAME_DEFAULT = None
 
 # --- États du Jeu ---
@@ -206,10 +207,10 @@ STAT_SIZE_MIN_SCALE_FACTOR = "size_min_scale_factor"
 STAT_SIZE_MAX_SCALE_FACTOR = "size_max_scale_factor"
 STAT_HITBOX_SCALE_FACTORS_WH = "hitbox_scale_factors_wh"
 
-ICON_FILENAME_MONEY = "dollar.png" # NOUVEAU (ou gardez "icon_money.png" si c'est le vrai nom)
-ICON_FILENAME_IRON = "metal.png"   # NOUVEAU (ou gardez "icon_iron.png")
-ICON_FILENAME_ENERGY = "bolt.png"  # NOUVEAU (ou gardez "icon_energy.png")
-ICON_FILENAME_HEART_FULL = "heart.png" # NOUVEAU (ou gardez "heart_full.png")
+ICON_FILENAME_MONEY = "dollar.png"
+ICON_FILENAME_IRON = "metal.png"
+ICON_FILENAME_ENERGY = "bolt.png"
+ICON_FILENAME_HEART_FULL = "heart.png"
 
 
 # --- STATS DE BASE DES BÂTIMENTS (Coûts, Production, Consommation) ---
@@ -217,7 +218,7 @@ FRAME_COST_MONEY = 10
 GENERATOR_COST_MONEY = 150
 GENERATOR_POWER_PRODUCTION = 10
 MINER_COST_MONEY = 200
-MINER_COST_IRON = 0 # Modifié
+MINER_COST_IRON = 0
 MINER_POWER_CONSUMPTION = 2
 MINER_IRON_PRODUCTION_PM = 60
 STORAGE_COST_MONEY = 100
@@ -226,13 +227,13 @@ STORAGE_ADJACENCY_BONUS_VALUE = 50
 
 # --- STATS DE BASE DES TOURELLES (Coûts, Consommation, Caractéristiques de tir) ---
 MACHINE_GUN_COST_MONEY = 175
-MACHINE_GUN_COST_IRON = 0 # Modifié
+MACHINE_GUN_COST_IRON = 0
 MACHINE_GUN_POWER_CONSUMPTION = 6
 MACHINE_GUN_RANGE_PIXELS = 1500
 MACHINE_GUN_FIRE_RATE_PER_SEC = 10
 
 MORTAR_COST_MONEY = 120
-MORTAR_COST_IRON = 0 # Modifié
+MORTAR_COST_IRON = 0
 MORTAR_POWER_CONSUMPTION = 8
 MORTAR_MIN_RANGE_PIXELS = 50
 MORTAR_MAX_RANGE_PIXELS = 1000
@@ -240,25 +241,25 @@ MORTAR_FIRE_RATE_PER_SEC = 0.4
 MORTAR_PROJECTILE_LAUNCH_SPEED_PIXELS = 600
 
 FLAMETHROWER_COST_MONEY = 220
-FLAMETHROWER_COST_IRON = 0 # Modifié
+FLAMETHROWER_COST_IRON = 0
 FLAMETHROWER_POWER_CONSUMPTION = 7
 FLAMETHROWER_RANGE_PIXELS = 800
 FLAMETHROWER_DURATION_SEC = 4.0
 FLAMETHROWER_COOLDOWN_SEC = 2.0
 
 SNIPER_COST_MONEY = 300
-SNIPER_COST_IRON = 0 # Modifié
+SNIPER_COST_IRON = 0
 SNIPER_POWER_CONSUMPTION = 4
 SNIPER_RANGE_PIXELS = 700
 SNIPER_FIRE_RATE_PER_SEC = 0.3
 
-# NOUVEAU: Consommation de fer par tir
+#Consommation de fer par tir
 MACHINE_GUN_IRON_COST_PER_SHOT = 1
 MORTAR_IRON_COST_PER_SHOT = 5
 FLAMETHROWER_IRON_COST_PER_PARTICLE_BURST = 2
 SNIPER_IRON_COST_PER_SHOT = 10
 
-# NOUVEAU: Noms de sprites pour états avec/sans fer et animation de tir
+#------ Noms de sprites pour états avec/sans fer et animation de tir ------
 # Machine Gun
 MACHINE_GUN_SPRITE_HAS_AMMO = "machinegun2.png"
 MACHINE_GUN_SPRITE_NO_AMMO = "machinegun1.png"
@@ -266,8 +267,8 @@ MACHINE_GUN_SPRITE_NO_AMMO = "machinegun1.png"
 MORTAR_SPRITE_HAS_AMMO = "mortar2.png"
 MORTAR_SPRITE_NO_AMMO = "mortar1.png"
 # Flamethrower
-FLAMETHROWER_SPRITE_HAS_AMMO = "flame2.png" # A des ressources
-FLAMETHROWER_SPRITE_NO_AMMO = "flame.png"   # N'a pas de ressources
+FLAMETHROWER_SPRITE_HAS_AMMO = "flame2.png"
+FLAMETHROWER_SPRITE_NO_AMMO = "flame.png"
 # Sniper
 SNIPER_SPRITE_HAS_AMMO = "sniper2.png"
 SNIPER_SPRITE_NO_AMMO = "sniper1.png"
@@ -288,24 +289,48 @@ MACHINE_GUN_BEAM_DAMAGE_PER_SHOT = 3
 MACHINE_GUN_BEAM_DURATION_SEC = 0.007
 
 # --- STATS DE BASE DES ENNEMIS (HP, Vitesse, Dégâts, Récompenses) ---
-ENEMY1_HP_MAX = 50
+ENEMY1_HP_MAX = 80
 ENEMY1_MOVE_SPEED_PIXELS_SEC = 60
 ENEMY1_DAMAGE_TO_CITY = 10
 ENEMY1_SCORE_POINTS_VALUE = 10
-ENEMY1_MONEY_DROP_VALUE = 5
-ENEMY2_HP_MAX = 30
+ENEMY1_MONEY_DROP_VALUE = 20
+ENEMY2_HP_MAX = 50
 ENEMY2_MOVE_SPEED_PIXELS_SEC = 120
 ENEMY2_DAMAGE_TO_CITY = 5
 ENEMY2_SCORE_POINTS_VALUE = 15
-ENEMY2_MONEY_DROP_VALUE = 7
-ENEMY3_HP_MAX = 200
+ENEMY2_MONEY_DROP_VALUE = 30
+ENEMY3_HP_MAX = 3000
 ENEMY3_MOVE_SPEED_PIXELS_SEC = 60
 ENEMY3_DAMAGE_TO_CITY = 25
 ENEMY3_SCORE_POINTS_VALUE = 50
-ENEMY3_MONEY_DROP_VALUE = 20
+ENEMY3_MONEY_DROP_VALUE = 200
+
+# Kamikaze Plane Stats
+KAMIKAZE_DIVE_TRIGGER_DISTANCE_BASE = 700 # Distance de base (en pixels de référence) pour déclencher la plongée
+KAMIKAZE_HORIZONTAL_SPEED_BASE = 70      # Vitesse horizontale de base
+KAMIKAZE_DIVE_ACCELERATION_X_BASE = 5    # Accélération horizontale pendant la plongée (pour vitesse croissante)
+KAMIKAZE_MAX_DIVE_SPEED_X_BASE = 200     # Vitesse horizontale maximale en plongée
+KAMIKAZE_HP_BASE = 75
+KAMIKAZE_CITY_DAMAGE_BASE = 0 # Ne fait pas de dégâts à la ville s'il la traverse
+KAMIKAZE_MONEY_DROP_BASE = 25
+KAMIKAZE_SCORE_BASE = 50
+KAMIKAZE_SPRITE_SCALE_FACTOR = 0.2
+
+# Noms des sprites pour Kamikaze
+KAMIKAZE_SPRITE_NORMAL_FLIGHT = "kamikaze_plane_horizontal.png"
+KAMIKAZE_SPRITE_DIVING = "kamikaze_plane_diving.png"
+
+# Ruines
+RUIN_SPRITE_NAME = "destroyed_building.png"
+
+
+
+# UI Feedback pour déficit d'énergie
+POWER_WARNING_TEXT_COLOR = COLOR_RED # Ou une autre couleur d'alerte
+POWER_WARNING_FONT_SIZE_KEY = 'medium' # Utiliser 'small', 'medium', ou 'large' du scaler
 
 # --- Taille des Sprites et Hitbox et autres params d'objets---
-GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER = 0.5
+GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER = 0.3
 BASE_PROJECTILE_SPRITE_SCALE_FACTOR = 0.2
 BASE_PROJECTILE_FALLBACK_SIZE = 5
 BASE_PROJECTILE_OFFSCREEN_BUFFER = 100
@@ -331,4 +356,5 @@ BASE_EXPANSION_COST_SIDE = 750
 EXPANSION_COST_INCREASE_FACTOR_UP = 1.5
 EXPANSION_COST_INCREASE_FACTOR_SIDE = 1.8
 
+#boolean to toggle the debug mode
 DEBUG_MODE = True

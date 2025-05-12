@@ -151,7 +151,7 @@ def run_tutorial_mode(screen, clock, game_state_instance: game_functions.GameSta
                     elif action == cfg.STATE_QUIT:
                         running_this_mode = False
                         return cfg.STATE_QUIT
-            # No game_over_flag check typically for tutorial
+            # No game_over_flag check
             else:  # Game is active
                 game_state_instance.handle_player_input(event, mouse_pos)
                 game_state_instance.update_tutorial_specific_logic(event)  # For any event-driven tutorial logic
@@ -166,7 +166,7 @@ def run_tutorial_mode(screen, clock, game_state_instance: game_functions.GameSta
                 else:
                     game_state_instance.show_tutorial_message("Tutoriel Terminé! Bravo!",
                                                               5)  # Short message then maybe auto-exit
-                    # Could add a delay then: running_this_mode = False; return cfg.STATE_MENU
+                    #running_this_mode = False; return cfg.STATE_MENU
 
         if not game_state_instance.game_paused and not game_state_instance.game_over_flag:
             game_state_instance.update_game_logic(delta_time)  # General game logic (timers, etc.)

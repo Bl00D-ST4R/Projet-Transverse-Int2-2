@@ -43,6 +43,7 @@ WAVE_DEFINITIONS_PRESET = {
     1: [  # Vague 1
         # Groupe 1: 5 ennemis basiques, espacés de 2 secondes, commençant après 3 secondes.
         {"delay_start_group": 3.0, "enemy_id": 1, "count": 5, "interval": 2.0, "variant": None},
+        #{"delay_start_group": 5.0, "enemy_id": 4, "count": 2, "interval": 2.0, "variant": None},
     ],
     2: [  # Vague 2
         {"delay_start_group": 2.0, "enemy_id": 1, "count": 8, "interval": 1.5, "variant": None},

@@ -216,6 +216,30 @@ def draw_top_bar_ui(screen, game_state, scaler: Scaler):
             icon_rect = scaled_icon.get_rect(midright=(right_align_x_abs, padding_y_center_abs))
             screen.blit(scaled_icon, icon_rect)
 
+    if game_state.electricity_consumed > 0 and game_state.electricity_produced < game_state.electricity_consumed:
+        damage_multiplier = game_state.get_power_damage_multiplier()
+        reduction_percent = int((1 - damage_multiplier) * 100)
+
+        warning_text = f"MANQUE D'ÉNERGIE! DÉGÂTS ARMES -{reduction_percent}%"
+        # Utiliser une clé de config pour la taille de police si vous en avez une, sinon scaler.font_size_small/medium
+        font_size_warning = getattr(scaler, f"font_size_{cfg.POWER_WARNING_FONT_SIZE_KEY}", scaler.font_size_small)
+
+        warning_surf = util.render_text_surface(warning_text, font_size_warning, cfg.POWER_WARNING_TEXT_COLOR)
+        if warning_surf:
+            # Centrer le message d'avertissement dans la barre du haut ou à une position spécifique
+            warning_rect = warning_surf.get_rect(
+                center=(scaler.screen_origin_x + scaler.usable_w // 2, padding_y_center_abs))
+
+            # Optionnel: faire clignoter le texte ou le fond
+            time_factor = pygame.time.get_ticks() // 500  # Change toutes les 500ms
+            if time_factor % 2 == 0:  # Clignote
+                # Dessiner un fond semi-transparent pour le warning pour meilleure lisibilité
+                bg_warning_rect = warning_rect.inflate(scaler.scale_value(10), scaler.scale_value(4))
+                bg_warning_surf = pygame.Surface(bg_warning_rect.size, pygame.SRCALPHA)
+                bg_warning_surf.fill((50, 0, 0, 150))  # Rouge sombre transparent
+                screen.blit(bg_warning_surf, bg_warning_rect.topleft)
+                screen.blit(warning_surf, warning_rect)
+
 
 def draw_base_grid(screen, game_state, scaler: Scaler):
     if not hasattr(game_state, 'buildable_area_rect_pixels') or not game_state.buildable_area_rect_pixels:

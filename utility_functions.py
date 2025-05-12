@@ -14,10 +14,9 @@ class Scaler:
         self.ref_h = ref_height
 
         # Marges réelles en pixels
-        self.screen_margin_v = getattr(cfg, 'SCREEN_MARGIN_VERTICAL',
-                                       cfg.SCREEN_MARGIN_VERTICAL)  # Use SCREEN_MARGIN as fallback
-        self.screen_margin_h = getattr(cfg, 'SCREEN_MARGIN_HORIZONTAL',
-                                       cfg.SCREEN_MARGIN_HORIZONTAL)  # Use SCREEN_MARGIN as fallback
+        # Ensure these are defined in game_config.py, otherwise default to a single SCREEN_MARGIN
+        self.screen_margin_v = getattr(cfg, 'SCREEN_MARGIN_VERTICAL', cfg.SCREEN_MARGIN_VERTICAL)
+        self.screen_margin_h = getattr(cfg, 'SCREEN_MARGIN_HORIZONTAL', cfg.SCREEN_MARGIN_HORIZONTAL)
 
         # Origine de la zone utilisable sur l'écran réel
         self.screen_origin_x = self.screen_margin_h
@@ -27,7 +26,7 @@ class Scaler:
         self.usable_w = self.actual_w - (2 * self.screen_margin_h)
         self.usable_h = self.actual_h - (2 * self.screen_margin_v)
 
-        if self.usable_w <= 0:
+        if self.usable_w <= 0:  # Empêcher largeur/hauteur utilisable négative ou nulle
             if cfg.DEBUG_MODE: print(
                 f"AVERTISSEMENT SCALER: Largeur utilisable ({self.usable_w}) <= 0. Marge H ({self.screen_margin_h}) trop grande pour largeur écran ({self.actual_w}). Ajustement à 1.")
             self.usable_w = 1
@@ -36,30 +35,36 @@ class Scaler:
                 f"AVERTISSEMENT SCALER: Hauteur utilisable ({self.usable_h}) <= 0. Marge V ({self.screen_margin_v}) trop grande pour hauteur écran ({self.actual_h}). Ajustement à 1.")
             self.usable_h = 1
 
-        if self.ref_w == 0 or self.ref_h == 0:
+        if self.ref_w == 0 or self.ref_h == 0:  # Avoid division by zero
             self.scale_x_factor = 1.0
             self.scale_y_factor = 1.0
         else:
+            # Les facteurs de scale sont toujours basés sur la zone UTILISABLE par rapport à la référence
             self.scale_x_factor = self.usable_w / self.ref_w
             self.scale_y_factor = self.usable_h / self.ref_h
 
         self.general_scale_factor = min(self.scale_x_factor, self.scale_y_factor)
-        if self.general_scale_factor <= 0: self.general_scale_factor = 1.0
+        if self.general_scale_factor <= 0: self.general_scale_factor = 1.0  # Sécurité
 
+        # Pre-calculate frequently used scaled dimensions based on general_scale_factor
         self.tile_size = self._scale_dim_floor(cfg.BASE_TILE_SIZE)
         self.ui_top_bar_height = self._scale_dim_floor(cfg.BASE_UI_TOP_BAR_HEIGHT)
         self.ui_build_menu_height = self._scale_dim_floor(cfg.BASE_UI_BUILD_MENU_HEIGHT)
+
         self.ui_build_menu_button_w = self._scale_dim_floor(cfg.BASE_UI_BUILD_MENU_BUTTON_SIZE_W)
         self.ui_build_menu_button_h = self._scale_dim_floor(cfg.BASE_UI_BUILD_MENU_BUTTON_SIZE_H)
         self.ui_build_menu_button_padding = self._scale_dim_floor(cfg.BASE_UI_BUILD_MENU_BUTTON_PADDING)
         self.ui_icon_size_default = self._scale_dim_floor(cfg.BASE_UI_ICON_SIZE_DEFAULT)
         self.ui_general_padding = self._scale_dim_floor(cfg.BASE_UI_GENERAL_PADDING)
+
         self.scaled_grid_offset_x = self._scale_dim_floor(cfg.BASE_GRID_OFFSET_X)
+
         self.font_size_small = self._scale_dim_font(cfg.BASE_FONT_SIZE_SMALL)
         self.font_size_medium = self._scale_dim_font(cfg.BASE_FONT_SIZE_MEDIUM)
         self.font_size_large = self._scale_dim_font(cfg.BASE_FONT_SIZE_LARGE)
         self.font_size_xlarge = self._scale_dim_font(cfg.BASE_FONT_SIZE_XLARGE)
         self.font_size_title = self._scale_dim_font(cfg.BASE_FONT_SIZE_TITLE)
+
         self.gravity = cfg.BASE_GRAVITY_PHYSICS * self.general_scale_factor
 
         if cfg.DEBUG_MODE:
@@ -116,90 +121,63 @@ class Scaler:
 sprite_cache = {}
 font_cache = {}
 sound_cache = {}
-FAILSAFE_SPRITE_PATH = os.path.join(cfg.ASSET_PATH, "turrets", "mortar_sketch.png")  # Default failsafe
+# Ensure FAILSAFE_SPRITE_PATH is a valid path, e.g., taken from a known existing sprite in your assets
+# This might need adjustment if your turret path or mortar_sketch.png changes.
+FAILSAFE_SPRITE_PATH = os.path.join(cfg.ASSET_PATH, "turrets", "mortar_sketch.png")
 
 
-# MODIFIÉ : Ajout de specific_fallback_path à la fonction load_sprite
-def load_sprite(path, use_alpha=True, specific_fallback_path=None):
-    cache_key = path  # Use original path as cache key
+def load_sprite(path, use_alpha=True):
+    cache_key = path
     if cache_key in sprite_cache:
         return sprite_cache[cache_key]
 
-    # full_path = os.path.join(path) # This was redundant if path is already joined
     full_path = path
     image = None
 
     try:
-        # Ensure full_path is an absolute path or correctly relative to execution directory
-        # If path is like "turrets/sprite.png", it might need prefixing with ASSET_PATH
-        # For now, assuming 'path' is already a complete path that os.path.exists can check
-        if not os.path.isabs(full_path) and not full_path.startswith(cfg.ASSET_PATH):  # Heuristic
-            test_path = os.path.join(cfg.ASSET_PATH, full_path)
-            if os.path.exists(test_path):
-                full_path = test_path
-            # else keep original full_path and let pygame.image.load attempt it
-
         if not os.path.exists(full_path):
-            raise FileNotFoundError(f"Sprite file not found: '{full_path}' (original path: '{path}')")
+            # Try to construct path relative to ASSET_PATH if simple path fails
+            # This is a common pattern if 'path' is just 'turrets/mortar_sketch.png'
+            alt_full_path = os.path.join(cfg.ASSET_PATH, path)
+            if os.path.exists(alt_full_path):
+                full_path = alt_full_path
+            else:
+                raise FileNotFoundError(f"Sprite file not found: '{path}' or '{alt_full_path}'")
         image = pygame.image.load(full_path)
-
     except (pygame.error, FileNotFoundError) as e:
-        if cfg.DEBUG_MODE: print(f"AVERTISSEMENT: Impossible de charger '{full_path}': {e}.")
+        if cfg.DEBUG_MODE: print(f"AVERTISSEMENT: Impossible de charger '{path}': {e}. Tentative secours.")
+        try:
+            if not os.path.exists(FAILSAFE_SPRITE_PATH):
+                if cfg.DEBUG_MODE: print(f"ERREUR CRITIQUE: Fichier de secours '{FAILSAFE_SPRITE_PATH}' introuvable!")
+                placeholder = pygame.Surface((32, 32), pygame.SRCALPHA if use_alpha else 0)
+                placeholder.fill(cfg.COLOR_RED)
+                pygame.draw.circle(placeholder, cfg.COLOR_YELLOW, (16, 16), 10)
+                sprite_cache[cache_key] = placeholder
+                return placeholder
 
-        # Determine which fallback path to try
-        fallback_to_try = None
-        if specific_fallback_path and os.path.exists(specific_fallback_path):
-            fallback_to_try = specific_fallback_path
-            if cfg.DEBUG_MODE: print(f"Tentative de secours avec fallback spécifique: '{fallback_to_try}'")
-        elif os.path.exists(FAILSAFE_SPRITE_PATH):
-            fallback_to_try = FAILSAFE_SPRITE_PATH
-            if cfg.DEBUG_MODE: print(f"Tentative de secours avec failsafe général: '{fallback_to_try}'")
-        else:  # No valid fallback path found
-            if cfg.DEBUG_MODE: print(
-                f"ERREUR CRITIQUE: Aucun fallback (spécifique ou général '{FAILSAFE_SPRITE_PATH}') n'est valide/existant.")
-
-        if fallback_to_try:
-            try:
-                if fallback_to_try in sprite_cache:
-                    image = sprite_cache[fallback_to_try]
-                else:
-                    img_fs = pygame.image.load(fallback_to_try)
-                    image = img_fs.convert_alpha() if use_alpha else img_fs.convert()
-                    sprite_cache[fallback_to_try] = image  # Cache the fallback if loaded
-            except (pygame.error, FileNotFoundError) as e_fs:
-                if cfg.DEBUG_MODE: print(
-                    f"ERREUR: Échec chargement '{full_path}' ET secours '{fallback_to_try}': {e_fs}")
-                image = None  # Ensure image is None if fallback also fails
-        else:  # If no fallback_to_try was set (both specific and general failsafe are bad)
-            image = None
-
-        if not image:  # If all attempts (original, specific, general) failed
-            ph_size = (32, 32)  # Fixed small size for error placeholder
+            if FAILSAFE_SPRITE_PATH in sprite_cache:
+                image = sprite_cache[FAILSAFE_SPRITE_PATH]
+            else:
+                img_fs = pygame.image.load(FAILSAFE_SPRITE_PATH)
+                image = img_fs.convert_alpha() if use_alpha else img_fs.convert()
+                sprite_cache[FAILSAFE_SPRITE_PATH] = image
+        except (pygame.error, FileNotFoundError) as e_fs:
+            if cfg.DEBUG_MODE: print(f"ERREUR: Échec chargement '{path}' ET secours '{FAILSAFE_SPRITE_PATH}': {e_fs}")
+            ph_size = (32, 32)
             placeholder = pygame.Surface(ph_size, pygame.SRCALPHA if use_alpha else 0);
             placeholder.fill(cfg.COLOR_MAGENTA)
             pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, 0), (ph_size[0] - 1, ph_size[1] - 1), 2)
             pygame.draw.line(placeholder, cfg.COLOR_BLACK, (0, ph_size[1] - 1), (ph_size[0] - 1, 0), 2)
-            sprite_cache[cache_key] = placeholder  # Cache placeholder for original failed path
-            # Also cache for FAILSAFE_SPRITE_PATH if it wasn't already a placeholder, to prevent repeated load attempts
-            if FAILSAFE_SPRITE_PATH not in sprite_cache or sprite_cache[FAILSAFE_SPRITE_PATH] is not placeholder:
-                if os.path.exists(FAILSAFE_SPRITE_PATH):  # Only if general failsafe path was valid but load failed
-                    sprite_cache[FAILSAFE_SPRITE_PATH] = placeholder
+            sprite_cache[cache_key] = placeholder
+            if FAILSAFE_SPRITE_PATH not in sprite_cache: sprite_cache[FAILSAFE_SPRITE_PATH] = placeholder
             return placeholder
 
-    # If image was loaded successfully (original or a fallback)
-    if image and (cache_key not in sprite_cache or sprite_cache[cache_key] is not image):
-        image = image.convert_alpha() if use_alpha else image.convert()
-        sprite_cache[cache_key] = image  # Cache the successfully loaded and converted image under original path key
+    if image:
+        if path not in sprite_cache or sprite_cache[path] is not image:
+            image = image.convert_alpha() if use_alpha else image.convert()
+            sprite_cache[cache_key] = image
 
-    # Final get from cache: either the loaded image or the placeholder if everything failed.
-    # If image was loaded from a fallback path and cached under fallback_to_try,
-    # sprite_cache[cache_key] might still be the placeholder if original load failed first.
-    # This logic needs to ensure that if a fallback was used, it's returned for the original key.
-    # The current structure caches the placeholder for 'cache_key' if all loads fail.
-    # If a fallback is loaded, it's cached under 'fallback_to_try' and also assigned to 'image'.
-    # Then 'image' is cached under 'cache_key'. This seems correct.
-
-    return sprite_cache.get(cache_key)  # Should always find something now (loaded image or placeholder)
+    return sprite_cache.get(cache_key, sprite_cache.get(FAILSAFE_SPRITE_PATH))
 
 
 def scale_sprite_to_tile(original_sprite, scaler: Scaler):
@@ -226,71 +204,96 @@ def scale_sprite_to_size(original_sprite, target_width, target_height):
 def get_font(scaled_size, font_name=cfg.FONT_NAME_DEFAULT):
     safe_scaled_size = max(1, scaled_size)
     key = (font_name, safe_scaled_size)
+
     if key not in font_cache:
         try:
             font_cache[key] = pygame.font.Font(font_name, safe_scaled_size)
         except pygame.error:
             try:
                 font_cache[key] = pygame.font.SysFont("arial", safe_scaled_size)
+                if cfg.DEBUG_MODE: print(
+                    f"AVERTISSEMENT: Police '{font_name}' non trouvée, utilisation de SysFont 'arial'.")
             except pygame.error:
                 font_cache[key] = pygame.font.Font(None, safe_scaled_size)
-        except Exception:
+                if cfg.DEBUG_MODE: print(
+                    f"AVERTISSEMENT: SysFont 'arial' non trouvée, utilisation de la police Pygame par défaut.")
+        except Exception as e_font:
+            if cfg.DEBUG_MODE: print(
+                f"ERREUR INATTENDUE: Chargement police '{font_name}' taille {safe_scaled_size}: {e_font}")
             font_cache[key] = pygame.font.Font(None, safe_scaled_size)
     return font_cache[key]
 
 
 def render_text_surface(text, scaled_size, color, font_name=cfg.FONT_NAME_DEFAULT, antialias=True,
                         background_color=None):
-    if scaled_size < 1: scaled_size = 1
+    if scaled_size < 1:
+        if cfg.DEBUG_MODE: print(
+            f"AVERTISSEMENT: Tentative de rendu de texte avec taille < 1 ({scaled_size}). Ajustement à 1.")
+        scaled_size = 1
+
     font = get_font(scaled_size, font_name)
-    if not font: return None
+    if not font:
+        if cfg.DEBUG_MODE: print(
+            f"ERREUR CRITIQUE: get_font a retourné None pour taille {scaled_size}, police {font_name}.")
+        return None
     try:
         return font.render(text, antialias, color, background_color) if background_color else font.render(text,
                                                                                                           antialias,
                                                                                                           color)
-    except Exception:
+    except pygame.error as e:
+        if cfg.DEBUG_MODE: print(f"ERREUR: font.render échoué pour '{text}' taille {scaled_size}: {e}")
+        return None
+    except Exception as e_generic:
+        if cfg.DEBUG_MODE: print(f"ERREUR INATTENDUE: font.render pour '{text}' taille {scaled_size}: {e_generic}")
         return None
 
 
 def load_sound(path):
     if path in sound_cache: return sound_cache[path]
-    full_path = path
+    full_path = path  # Assume path is already full or correctly relative
     try:
-        if not os.path.isabs(full_path) and not full_path.startswith(cfg.ASSET_PATH):
-            alt_path = os.path.join(cfg.ASSET_PATH, path)
-            if os.path.exists(alt_path): full_path = alt_path
-        sound = pygame.mixer.Sound(full_path);
-        sound_cache[path] = sound;
+        sound = pygame.mixer.Sound(full_path)
+        sound_cache[path] = sound
         return sound
-    except pygame.error:
+    except pygame.error as e:
+        if cfg.DEBUG_MODE: print(f"AVERTISSEMENT: Impossible de charger le son '{full_path}': {e}")
         return None
 
 
 def play_sound(sound_object, loops=0, volume=1.0):
-    if sound_object and pygame.mixer.get_init(): sound_object.set_volume(volume); sound_object.play(loops)
+    if sound_object and pygame.mixer.get_init():
+        sound_object.set_volume(volume)
+        sound_object.play(loops)
 
 
 def convert_grid_to_pixels(grid_pos_tuple, grid_origin_xy_pixels, scaler: Scaler):
-    row, col = grid_pos_tuple;
+    row, col = grid_pos_tuple
     tile_size = scaler.tile_size
     return (col * tile_size + grid_origin_xy_pixels[0], row * tile_size + grid_origin_xy_pixels[1])
 
 
 def convert_pixels_to_grid(pixel_pos_tuple, grid_origin_xy_pixels, scaler: Scaler):
-    px, py = pixel_pos_tuple;
+    px, py = pixel_pos_tuple
     tile_size = scaler.tile_size
-    if tile_size == 0: return -1, -1
-    relative_px = px - grid_origin_xy_pixels[0];
+    if tile_size == 0:
+        if cfg.DEBUG_MODE: print("ERREUR: tile_size est 0 dans convert_pixels_to_grid.")
+        return -1, -1
+
+    relative_px = px - grid_origin_xy_pixels[0]
     relative_py = py - grid_origin_xy_pixels[1]
-    grid_col = int(math.floor(relative_px / tile_size));
+
+    grid_col = int(math.floor(relative_px / tile_size))
     grid_row = int(math.floor(relative_py / tile_size))
+
     return (grid_row, grid_col)
 
 
 def draw_debug_rect(surface, rect, color=cfg.COLOR_RED, width=1):
-    if rect and isinstance(rect, pygame.Rect): pygame.draw.rect(surface, color, rect, width)
+    if rect and isinstance(rect, pygame.Rect):
+        pygame.draw.rect(surface, color, rect, width)
 
 
 def draw_debug_text(surface, text, position_xy, scaler: Scaler, color=cfg.COLOR_WHITE):
     text_surf = render_text_surface(text, scaler.font_size_small, color)
-    if text_surf: surface.blit(text_surf, position_xy)
+    if text_surf:
+        surface.blit(text_surf, position_xy)

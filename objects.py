@@ -1,4 +1,6 @@
 # objects.py
+from random import randint
+
 import pygame
 import random
 import math
@@ -70,7 +72,7 @@ def set_scaled_gravity(scaled_g):
 """
 
 
-
+#function were the trajectory equation is calculated
 def compute_mortar_launch_angles_rad(relative_target_x, relative_target_y_physics, v0):
     """
     Calcule les angles de lancement (élévation) nécessaires pour atteindre une cible.
@@ -201,8 +203,7 @@ def compute_mortar_launch_angles_rad(relative_target_x, relative_target_y_physic
                 if 0 <= angle_rad_candidate <= math.pi / 2 + 1e-3:  # Angle entre 0 et 90 degrés (avec petite tolérance)
                     valid_angles.append(angle_rad_candidate)
 
-            # TODO: Gérer le cas relative_target_x < 0 (tirer en arrière) si nécessaire.
-            # Cela impliquerait des angles entre pi/2 et pi.
+
 
         if not valid_angles:
             if cfg.DEBUG_MODE: print(
@@ -266,6 +267,14 @@ BUILDING_STATS = {
             "single": "storage.png",
         },
         cfg.STAT_SPRITE_DEFAULT_NAME: "storage.png",
+    },
+    "ruin": {
+        cfg.STAT_COST_MONEY: 0, # Pas constructible par le joueur
+        cfg.STAT_SPRITE_DEFAULT_NAME: cfg.RUIN_SPRITE_NAME, # "destroyed_building.png"
+        # Peut-être d'autres stats comme "non réparable", "bloque la construction"
+        "is_ruin": True,
+        cfg.STAT_POWER_PRODUCTION: 0, # Important
+        cfg.STAT_POWER_CONSUMPTION: 0, # Important
     }
 }
 
@@ -286,8 +295,8 @@ ENEMY_STATS = {
         cfg.STAT_DAMAGE_TO_CITY: cfg.ENEMY2_DAMAGE_TO_CITY,
         cfg.STAT_SCORE_POINTS_VALUE: cfg.ENEMY2_SCORE_POINTS_VALUE,
         cfg.STAT_MONEY_DROP_VALUE: cfg.ENEMY2_MONEY_DROP_VALUE,
-        cfg.STAT_SPRITE_DEFAULT_NAME: "enemy_basic_sketch.png",
-        cfg.STAT_SIZE_MIN_SCALE_FACTOR: 0.7, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.0,
+        cfg.STAT_SPRITE_DEFAULT_NAME: "kamikaze_plane_diving.png",
+        cfg.STAT_SIZE_MIN_SCALE_FACTOR: 0.4, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 0.5,
         cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.7, 0.9)
     },
     3: {
@@ -297,8 +306,23 @@ ENEMY_STATS = {
         cfg.STAT_SCORE_POINTS_VALUE: cfg.ENEMY3_SCORE_POINTS_VALUE,
         cfg.STAT_MONEY_DROP_VALUE: cfg.ENEMY3_MONEY_DROP_VALUE,
         cfg.STAT_SPRITE_DEFAULT_NAME: "EnnemyBoos.png",
-        cfg.STAT_SIZE_MIN_SCALE_FACTOR: 1.3, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.6,
+        cfg.STAT_SIZE_MIN_SCALE_FACTOR: 2.2, cfg.STAT_SIZE_MAX_SCALE_FACTOR: 2.2,
         cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.9, 0.9)
+    },
+    4: {
+        cfg.STAT_ID: "kamikaze_plane", # Optionnel, mais bon pour l'identification
+        cfg.STAT_HP_MAX: cfg.KAMIKAZE_HP_BASE,
+        cfg.STAT_MOVE_SPEED_PIXELS_SEC: cfg.KAMIKAZE_HORIZONTAL_SPEED_BASE, # Vitesse initiale horizontale
+        cfg.STAT_DAMAGE_TO_CITY: cfg.KAMIKAZE_CITY_DAMAGE_BASE, # Généralement 0, car il cible les générateurs
+        cfg.STAT_SCORE_POINTS_VALUE: cfg.KAMIKAZE_SCORE_BASE,
+        cfg.STAT_MONEY_DROP_VALUE: cfg.KAMIKAZE_MONEY_DROP_BASE,
+        cfg.STAT_SPRITE_DEFAULT_NAME: cfg.KAMIKAZE_SPRITE_NORMAL_FLIGHT, # Sprite pour le vol horizontal
+        # Vous pouvez ajuster ces facteurs de taille et de hitbox spécifiquement pour le kamikaze
+        cfg.STAT_SIZE_MIN_SCALE_FACTOR: 0.9,
+        cfg.STAT_SIZE_MAX_SCALE_FACTOR: 1.1,
+        cfg.STAT_HITBOX_SCALE_FACTORS_WH: (0.9, 0.6) # Exemple: plus large que haut
+        # Pas besoin de STAT_SPRITE_VARIANTS_DICT ici si KamikazePlane gère son changement de sprite
+        # (normal_flight vs diving) en interne.
     },
 }
 
@@ -535,7 +559,8 @@ class Building(GameObject):
 class Turret(GameObject):
     _id_counter = 0
 
-    def __init__(self, turret_type, pixel_pos_center, grid_pos_tuple, scaler: util.Scaler):
+    #def __init__(self, projectile_type, origin_xy_pixels, angle_deg, scaler: util.Scaler,game_state_ref_for_damage_mod=None,initial_vx=None, initial_vy=None, target_pos_for_beam=None):
+    def __init__(self, turret_type, pixel_pos_center, grid_pos_tuple, scaler: util.Scaler,game_state_ref_for_damage_mod=None):
         super().__init__()
         self.scaler = scaler
         if G_PHYSICS_SCALED == 0 and hasattr(self.scaler, 'gravity'):
@@ -591,6 +616,15 @@ class Turret(GameObject):
         self.is_flaming_active = False
         self.original_flame_charge_sprite, self.original_flame_discharge_sprite = None, None
         self.original_gun_sprite = None
+
+        base_damage = self.stats.get(cfg.STAT_DAMAGE_AMOUNT, 0)
+        if game_state_ref_for_damage_mod and hasattr(game_state_ref_for_damage_mod, 'get_power_damage_multiplier'):
+            damage_multiplier = game_state_ref_for_damage_mod.get_power_damage_multiplier()
+            self.damage = int(base_damage * damage_multiplier)
+            if cfg.DEBUG_MODE and damage_multiplier < 1.0 and self.type != "machine_gun_beam":  # Ne pas spammer pour le beam
+                print(f"Projectile {self.type} damage reduced to {self.damage} (multiplier: {damage_multiplier:.2f})")
+        else:
+            self.damage = base_damage
 
         if self.is_flamethrower:
             self.flame_duration_max = self.stats.get(cfg.STAT_FLAMETHROWER_DURATION_SEC, 4.0)
@@ -821,7 +855,7 @@ class Turret(GameObject):
                     if angles_rad and angles_rad[0] is not None:
                         self.can_hit_current_target = True
                         self.current_gun_elevation_deg = math.degrees(angles_rad[0])
-                        self.current_gun_elevation_deg = self.current_azimuth_deg + 30
+                        self.current_gun_elevation_deg = self.current_azimuth_deg + randint(25, 35)
                         #self.current_gun_elevation_deg = max(30, min(self.current_gun_elevation_deg, 85))
                     else:
                         self.can_hit_current_target = False
@@ -1146,7 +1180,7 @@ class Enemy(GameObject):
         Enemy._id_counter += 1;
         self.id = Enemy._id_counter
         self.type_id = enemy_type_id;
-        self.stats = ENEMY_STATS.get(self.type_id, ENEMY_STATS[1])
+        self.stats = ENEMY_STATS.get(self.type_id, ENEMY_STATS.get(1, {}))
         self.max_hp = self.stats.get(cfg.STAT_HP_MAX, 10);
         self.current_hp = self.max_hp
         self.speed_pixels_sec = self.scaler.scale_value(self.stats.get(cfg.STAT_MOVE_SPEED_PIXELS_SEC, 30))
@@ -1220,6 +1254,223 @@ class Enemy(GameObject):
             hp_r_rect = pygame.Rect(bg_r.left, bg_r.top, hp_fill_w, bar_h)
             pygame.draw.rect(surface, bar_bg_col, bg_r);
             pygame.draw.rect(surface, bar_fill_col, hp_r_rect)
+
+
+
+class KamikazePlane(Enemy):
+    def __init__(self, initial_pos_xy_on_screen, enemy_type_id, variant_data, scaler: util.Scaler):
+        super().__init__(initial_pos_xy_on_screen, enemy_type_id, variant_data, scaler)
+
+        self.is_kamikaze = True  # Flag pour identifier ce type spécial
+        self.is_diving = False
+        self.target_generator_object = None  # L'objet Building du générateur ciblé
+        self.dive_trigger_distance_sq = scaler.scale_value(cfg.KAMIKAZE_DIVE_TRIGGER_DISTANCE_BASE) ** 2
+
+        # Sprites pour les différentes phases
+        self.sprite_normal_flight_orig = self.original_sprite  # Chargé par Enemy.__init__
+        self.sprite_diving_orig = util.load_sprite(os.path.join(cfg.ENEMY_SPRITE_PATH, cfg.KAMIKAZE_SPRITE_DIVING))
+
+        # Pour la trajectoire de plongée en -x^2 (simplifié)
+        self.dive_start_pos = None  # (x,y) où la plongée commence
+        self.dive_target_pos = None  # (x,y) du centre du générateur
+        self.dive_horizontal_progress = 0.0  # Progression sur l'axe X relatif au début de la plongée
+        self.current_dive_speed_x = scaler.scale_value(
+            cfg.KAMIKAZE_HORIZONTAL_SPEED_BASE)  # Vitesse X pendant la plongée
+        self.dive_acceleration_x = scaler.scale_value(cfg.KAMIKAZE_DIVE_ACCELERATION_X_BASE)
+        self.max_dive_speed_x = scaler.scale_value(cfg.KAMIKAZE_MAX_DIVE_SPEED_X_BASE)
+        self.A_parabola = 0  # Paramètre de la parabole y = -A * x_rel^2
+
+        kamikaze_specific_scale = getattr(cfg, 'KAMIKAZE_SPRITE_SCALE_FACTOR', 1.0)
+        if self.sprite and kamikaze_specific_scale != 1.0:  # Si un scale spécifique est appliqué
+            current_w, current_h = self.sprite.get_size()
+            new_w = int(current_w * kamikaze_specific_scale)
+            new_h = int(current_h * kamikaze_specific_scale)
+            self.sprite = util.scale_sprite_to_size(self.sprite, max(1, new_w), max(1, new_h))
+            if self.sprite:  # Mettre à jour le rect après le re-scaling
+                self.rect = self.sprite.get_rect(center=self.rect.center)
+
+                # Charger et scaler le sprite de plongée
+        diving_sprite_name = getattr(cfg, 'KAMIKAZE_SPRITE_DIVING', "kamikaze_plane_diving.png")
+        self.sprite_diving_orig_unscaled = util.load_sprite(os.path.join(cfg.ENEMY_SPRITE_PATH, diving_sprite_name))
+
+        if self.sprite_diving_orig_unscaled:
+            # Appliquer le scaling de base de Enemy (min/max factor + global multiplier)
+            # PUIS le scaling spécifique du kamikaze
+            min_s = self.stats.get(cfg.STAT_SIZE_MIN_SCALE_FACTOR, 0.9)  # Utiliser les stats du kamikaze
+            max_s = self.stats.get(cfg.STAT_SIZE_MAX_SCALE_FACTOR, 1.1)
+            rand_type_scale = random.uniform(min_s, max_s)
+            glob_scale_mult = getattr(cfg, 'GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER', 1.0)
+
+            base_scale_factor = rand_type_scale * glob_scale_mult
+            final_scale_factor_for_diving = base_scale_factor * kamikaze_specific_scale
+
+            b_w, b_h = self.sprite_diving_orig_unscaled.get_size()
+            t_ref_w = b_w * final_scale_factor_for_diving
+            t_ref_h = b_h * final_scale_factor_for_diving
+            s_w, s_h = max(1, self.scaler.scale_value(t_ref_w)), max(1, self.scaler.scale_value(t_ref_h))
+            self.sprite_diving_scaled = util.scale_sprite_to_size(self.sprite_diving_orig_unscaled, s_w, s_h)
+        else:
+            # Fallback pour le sprite de plongée si le chargement échoue
+            fb_size = self.scaler.scale_value(getattr(cfg, 'BASE_ENEMY_FALLBACK_SIZE', 20) * kamikaze_specific_scale)
+            self.sprite_diving_scaled = pygame.Surface((max(1, fb_size), max(1, fb_size)), pygame.SRCALPHA)
+            self.sprite_diving_scaled.fill(cfg.COLOR_BLUE + (180,))
+
+        self.dive_start_pos = None
+        self.dive_target_pos = None
+        self.dive_horizontal_distance_total = 0.0
+        self.dive_vertical_distance_total = 0.0
+        self.dive_progress_factor = 0.0
+        base_horizontal_speed = getattr(cfg, 'KAMIKAZE_HORIZONTAL_SPEED_BASE', 70)
+        self.current_dive_speed_x = scaler.scale_value(base_horizontal_speed)
+        dive_accel_base = getattr(cfg, 'KAMIKAZE_DIVE_ACCELERATION_X_BASE', 5)
+        self.dive_acceleration_x = scaler.scale_value(dive_accel_base)
+        max_dive_speed_base = getattr(cfg, 'KAMIKAZE_MAX_DIVE_SPEED_X_BASE', 200)
+        self.max_dive_speed_x = scaler.scale_value(max_dive_speed_base)
+        self.A_parabola = 0
+        self.dive_duration_seconds = 2.0
+        self.time_in_dive = 0.0
+
+        if cfg.DEBUG_MODE:
+            print(f"Kamikaze {self.id} créé. Dive trigger dist sq: {self.dive_trigger_distance_sq}")
+
+    def select_target_generator(self, generators_list):
+        closest_gen = None
+        min_dist_sq = float('inf')
+
+        for gen in generators_list:
+            if gen.active and gen.type == "generator":  # S'assurer que c'est un générateur actif
+                dist_sq = (gen.rect.centerx - self.rect.centerx) ** 2 + \
+                          (gen.rect.centery - self.rect.centery) ** 2
+                if dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
+                    closest_gen = gen
+
+        if closest_gen and min_dist_sq < self.dive_trigger_distance_sq:
+            self.target_generator_object = closest_gen
+            return True
+        return False
+
+    def start_dive(self):
+        if not self.target_generator_object: return False
+
+        self.is_diving = True
+
+        if self.sprite_diving_scaled:
+            self.sprite = self.sprite_diving_scaled  # Changer le sprite affiché
+            if self.sprite: self.rect = self.sprite.get_rect(center=self.rect.center)
+
+
+        self.original_sprite = self.sprite_diving_orig  # Changer l'original pour le scaling
+        if self.original_sprite:  # Recalculer le sprite scalé
+            # Utiliser la même logique de scaling que dans Enemy.__init__ (ou une méthode partagée)
+            min_s, max_s = self.stats.get(cfg.STAT_SIZE_MIN_SCALE_FACTOR, 1.0), self.stats.get(
+                cfg.STAT_SIZE_MAX_SCALE_FACTOR, 1.0)
+            rand_type_scale = random.uniform(min_s, max_s)  # Peut-être pas de random scale pour le diving sprite ?
+            glob_scale_mult = getattr(cfg, 'GLOBAL_ENEMY_SPRITE_SCALE_MULTIPLIER', 1.0)
+            final_scale = rand_type_scale * glob_scale_mult  # Ou juste glob_scale_mult si diving sprite a une taille fixe
+
+            b_w, b_h = self.original_sprite.get_size()
+            t_ref_w, t_ref_h = b_w * final_scale, b_h * final_scale
+            s_w, s_h = max(1, self.scaler.scale_value(t_ref_w)), max(1, self.scaler.scale_value(t_ref_h))
+            self.sprite = util.scale_sprite_to_size(self.original_sprite, s_w, s_h)
+            if self.sprite: self.rect = self.sprite.get_rect(center=self.rect.center)  # Conserver le centre
+
+        #self.dive_start_pos = self.rect.center
+        self.dive_start_pos = pygame.math.Vector2(self.rect.center)
+        self.dive_target_pos = self.target_generator_object.rect.center
+        self.dive_horizontal_progress = 0.0
+        self.current_dive_speed_x = self.scaler.scale_value(
+            self.stats.get(cfg.STAT_MOVE_SPEED_PIXELS_SEC))  # Vitesse X initiale de plongée
+
+        # Calcul du paramètre A pour y_rel = -A * x_rel^2 (ou y_rel = A * x_rel^2 si y_target > y_start)
+        # x_rel_target est la distance horizontale totale à parcourir en plongée
+        # y_rel_target est la distance verticale totale à parcourir en plongée
+        x_rel_target = self.dive_target_pos[0] - self.dive_start_pos[0]
+        y_rel_target = self.dive_target_pos[1] - self.dive_start_pos[1]  # Pygame Y (positif vers le bas)
+
+        if abs(x_rel_target) < 1e-6:  # Plongée verticale pure (peu probable, mais sécurité)
+            self.A_parabola = 0  # Se comportera comme une ligne droite verticale
+        else:
+            # On veut que la parabole passe par (x_rel_target, y_rel_target)
+            # y_rel_target = self.A_parabola * (x_rel_target ** 2)  <-- si on veut une parabole qui ouvre vers le haut/bas
+            # Pour une forme de piqué, on peut utiliser une fonction plus simple ou une interpolation.
+            # Pour y = -Ax^2, le sommet est à l'origine. Si on veut que ça ressemble à un piqué :
+            # On peut modéliser la courbe de façon à ce que dy/dx augmente.
+            # Simplification : on va viser une interpolation qui accélère.
+            # Ou, pour la courbe -x^2, il faut que le "sommet" (où x_rel=0) soit au point de départ.
+            # y_rel = K * x_rel^2 (où x_rel est la progression horizontale depuis dive_start_pos)
+            # K = y_rel_target / (x_rel_target^2)
+            self.A_parabola = y_rel_target / (x_rel_target ** 2) if x_rel_target else 0
+
+        if cfg.DEBUG_MODE: print(
+            f"Kamikaze {self.id} starting dive towards {self.target_generator_object.id}. A={self.A_parabola:.4f}")
+        return True
+
+    def update(self, delta_time, game_state_ref, scaler: util.Scaler = None):
+        if not self.active: return
+        if self.scaler is None and scaler: self.scaler = scaler
+
+        if self.is_diving:
+            if not self.target_generator_object or not self.target_generator_object.active:
+                # Cible détruite ou disparue en cours de plongée, l'avion continue sa trajectoire ou explose ?
+                # Pour l'instant, il continue sur sa lancée et se désactive s'il sort de l'écran
+                self.active = False  # Ou un autre comportement
+                if cfg.DEBUG_MODE: print(f"Kamikaze {self.id} target lost during dive.")
+                return
+
+            # Augmenter la vitesse horizontale de plongée (accélération)
+            self.current_dive_speed_x += self.dive_acceleration_x * delta_time
+            self.current_dive_speed_x = min(self.current_dive_speed_x, self.max_dive_speed_x)
+
+            # Mouvement horizontal
+            dx = self.current_dive_speed_x * delta_time
+            # S'assurer que l'avion se déplace dans la bonne direction X vers la cible
+            if self.dive_target_pos[0] < self.dive_start_pos[0]:  # Cible à gauche
+                dx = -dx
+
+            self.rect.x += dx
+            self.dive_horizontal_progress += abs(dx)  # Progression horizontale absolue
+
+            # Calculer la position Y basée sur la parabole relative au point de départ de la plongée
+            x_rel_parabola = self.rect.centerx - self.dive_start_pos[0]
+            y_rel_parabola = self.A_parabola * (
+                        x_rel_parabola ** 2)  # y = A * x^2 (A peut être <0 si on plonge vers le bas)
+
+            self.rect.centery = self.dive_start_pos[1] + y_rel_parabola
+
+            self.hitbox.center = self.rect.center
+
+            # Vérifier collision avec la cible
+            if self.hitbox.colliderect(self.target_generator_object.rect):
+                if cfg.DEBUG_MODE: print(f"Kamikaze {self.id} HIT generator {self.target_generator_object.id}!")
+                game_state_ref.handle_kamikaze_impact(self,
+                                                      self.target_generator_object)  # Méthode à créer dans GameState
+                self.active = False  # Kamikaze se détruit
+                return
+
+            # Vérifier si a dépassé la cible horizontalement (pour éviter de la rater indéfiniment)
+            if (dx > 0 and self.rect.centerx > self.dive_target_pos[0] + self.rect.width) or \
+                    (dx < 0 and self.rect.centerx < self.dive_target_pos[0] - self.rect.width):
+                if cfg.DEBUG_MODE: print(f"Kamikaze {self.id} overshot target.")
+                # Optionnel: explose quand même ou se désactive
+                game_state_ref.handle_kamikaze_impact(self, self.target_generator_object, missed=True)
+                self.active = False
+                return
+
+        else:  # Vol horizontal normal
+            super().update(delta_time, game_state_ref, scaler)  # Mouvement horizontal de base
+            if not self.active: return  # Si super().update l'a désactivé (ex: sortie d'écran)
+
+            # Chercher une cible et potentiellement commencer la plongée
+            # On a besoin de la liste des générateurs depuis game_state_ref
+            if hasattr(game_state_ref, 'buildings'):
+                generators = [b for b in game_state_ref.buildings if b.type == "generator" and b.active]
+                if self.select_target_generator(generators):
+                    self.start_dive()
+
+        # Désactivation si sort de l'écran (en plus de la logique de base de Enemy.update)
+        if self.rect.top > scaler.actual_h or self.rect.bottom < 0:
+            self.active = False
 
 
 # --- Calcul de Trajectoire pour Mortier ---

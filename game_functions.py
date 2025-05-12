@@ -10,7 +10,7 @@ import wave_definitions
 
 
 class GameState:
-    # ... (__init__ et la plupart des méthodes inchangées par rapport à votre dernière version) ...
+    #initialisation of GameState
     def __init__(self, scaler: util.Scaler):
         self.scaler = scaler;
         self.screen = None;
@@ -234,6 +234,9 @@ class GameState:
                 self.time_to_next_wave_seconds = cfg.WAVE_TIME_BETWEEN_WAVES_SEC
 
     def spawn_enemy(self, enemy_type_id, variant_data=None):
+
+        spawn_x_on_screen = 900
+        spawn_y_on_screen = 1920
         game_area_top_y = self.scaler.screen_origin_y + self.scaler.ui_top_bar_height
         game_area_bottom_y = self.scaler.screen_origin_y + self.scaler.usable_h - self.scaler.ui_build_menu_height
         game_h = game_area_bottom_y - game_area_top_y
@@ -249,6 +252,13 @@ class GameState:
                 print(f"WARN: Spawn Y range invalid after padding. Min:{actual_min_y}, Max:{actual_max_y}")
         elif cfg.DEBUG_MODE:
             print("WARN: Game area height too small for spawn padding.")
+
+        if enemy_type_id == 4:  # Supposons que 4 est l'ID du Kamikaze
+            new_enemy = objects.KamikazePlane((spawn_x_on_screen, spawn_y_on_screen), enemy_type_id, variant_data,
+                                              self.scaler)
+        else:  # Pour les autres types d'ennemis
+            new_enemy = objects.Enemy((spawn_x_on_screen, spawn_y_on_screen), enemy_type_id, variant_data, self.scaler)
+
         spawn_x = self.scaler.screen_origin_x + self.scaler.usable_w + self.scaler.scale_value(
             cfg.BASE_ENEMY_SPAWN_X_OFFSET)
         new_enemy = objects.Enemy((spawn_x, spawn_y), enemy_type_id, variant_data, self.scaler)
@@ -659,3 +669,45 @@ class GameState:
             return int(cfg.BASE_EXPANSION_COST_SIDE * (
                         cfg.EXPANSION_COST_INCREASE_FACTOR_SIDE ** self.current_expansion_sideways_steps))
         return "N/A"
+
+    def get_power_damage_multiplier(self):
+        if self.electricity_produced >= self.electricity_consumed or self.electricity_consumed == 0:
+            return 1.0  # Dégâts normaux
+
+        deficit = self.electricity_consumed - self.electricity_produced
+        reduction_percentage = deficit / self.electricity_consumed  # % d'énergie manquante
+
+        # Le multiplicateur de dégâts est 1 - % de réduction
+        # Si 50% d'énergie manque (reduction_percentage = 0.5), dégâts = 1 - 0.5 = 0.5 (50%)
+        damage_multiplier = 1.0 - reduction_percentage
+
+        return max(0.1, damage_multiplier)
+
+    def handle_kamikaze_impact(self, kamikaze_enemy, generator_hit, missed=False):
+        if cfg.DEBUG_MODE: print(
+            f"Handling kamikaze impact. Kamikaze: {kamikaze_enemy.id}, Generator: {generator_hit.id if generator_hit else 'None'}, Missed: {missed}")
+
+        if generator_hit and generator_hit.active and not missed:
+            # 1. Détruire le générateur
+            generator_hit.active = False  #  inactif
+            # if generator_hit in self.buildings: self.buildings.remove(generator_hit)
+
+            # 2. Remplacer par une ruine dans game_grid
+            grid_r, grid_c = generator_hit.grid_pos
+            ruin_pixel_pos = generator_hit.rect.topleft  # Utiliser la position du générateur détruit
+
+            # S'assurer que le type "ruin" existe dans BUILDING_STATS
+            if "ruin" in objects.BUILDING_STATS:
+                ruin_obj = objects.Building("ruin", ruin_pixel_pos, (grid_r, grid_c), self.scaler)
+                self.game_grid[grid_r][grid_c] = ruin_obj
+                self.buildings.append(ruin_obj)  # add to the draw list
+                if cfg.DEBUG_MODE: print(f"  Generator {generator_hit.id} at ({grid_r},{grid_c}) replaced by ruin.")
+            elif cfg.DEBUG_MODE:
+                print(f"  ERREUR: Type 'ruin' non trouvé dans BUILDING_STATS. Case laissée vide.")
+                self.game_grid[grid_r][grid_c] = None  # Laisser vide si pas de ruine définie
+
+            # 3. Mettre à jour la production/consommation d'énergie
+            self.update_resource_production_consumption()
+
+        # Le kamikaze se détruit dans tous les cas (hit ou miss après plongée)
+        kamikaze_enemy.active = False
