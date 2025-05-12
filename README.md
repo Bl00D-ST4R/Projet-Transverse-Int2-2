@@ -12,8 +12,13 @@ Functionalities :
 
 Workcharge distribution :
   Mathis : Ui implementation, design, artworks, concept
+  
   Louis : Notion/Monday, Powerpoint, Debugging, concept
+  
   Gaspard : Documentation, Programming, concept
+  
   Emiliano : 
+  
   Evan : Documentation, Programming, concept
+  
 
