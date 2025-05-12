@@ -126,7 +126,7 @@ sound_cache = {}
 FAILSAFE_SPRITE_PATH = os.path.join(cfg.ASSET_PATH, "turrets", "mortar_sketch.png")
 
 
-def load_sprite(path, use_alpha=True):
+def load_sprite(path, use_alpha=True, specific_fallback_path=None):
     cache_key = path
     if cache_key in sprite_cache:
         return sprite_cache[cache_key]
