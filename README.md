@@ -18,7 +18,7 @@ Workcharge distribution :
   
     Gaspard : Documentation, Programming, concept
   
-    Emiliano : 
+    Emiliano : Documentation, Programming, concept
   
     Evan : Documentation, Programming, concept
   
