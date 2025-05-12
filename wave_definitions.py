@@ -1,19 +1,16 @@
 # wave_definitions.py
-import game_config as cfg  # Pour les clés de stats si besoin (mais surtout pour les ID d'ennemis)
 
 # --- Constantes de Temps pour les Vagues ---
-# MODIFIABLE: Temps en secondes avant le début de la première vague
+# Temps en secondes avant le début de la première vague
 INITIAL_PREPARATION_TIME_SECONDS = 120.0  # 2 minutes
-
-# MODIFIABLE: Temps en secondes entre la fin d'une vague (tous ennemis tués/passés)
-# et le début du compte à rebours pour la suivante.
+#entre les vagues
 TIME_BETWEEN_WAVES_SECONDS = 150.0  # 2 minutes 30 secondes
 
 # --- Définition des Ennemis (Rappel des ID depuis ENEMY_STATS dans objects.py) ---
 # ENEMY_ID_BASIC = 1
 # ENEMY_ID_FAST = 2
 # ENEMY_ID_TANK = 3
-# ... (Référez-vous à objects.py pour les ID exacts que vous avez définis)
+
 
 # --- Structure d'une Vague ---
 # Chaque vague est un dictionnaire où la clé est le numéro de la vague (commençant à 1).
@@ -30,12 +27,6 @@ TIME_BETWEEN_WAVES_SECONDS = 150.0  # 2 minutes 30 secondes
 #   - variant_data: Un dictionnaire optionnel pour des variations spécifiques (non utilisé pour l'instant, mais prévu).
 #                   Ex: {"speed_multiplier": 1.2, "hp_multiplier": 1.5}
 
-# Cette structure est une suggestion. On peut la simplifier.
-# Version simplifiée pour la fonction `load_waves` actuelle dans `game_functions.py` :
-# `game_state.enemies_in_current_wave_to_spawn` attend une liste de :
-#   (delay_after_last_spawn_seconds, enemy_type_id, variant_data_optionnel)
-#
-# On va donc générer cette liste aplatie.
 
 # --- Définitions des Vagues Prédéfinies ---
 
@@ -64,8 +55,6 @@ WAVE_DEFINITIONS_PRESET = {
         {"delay_start_group": 3.0, "enemy_id": 1, "count": 15, "interval": 0.7, "variant": None},  # Swarm de basiques
         {"delay_start_group": 2.0, "enemy_id": 2, "count": 8, "interval": 1.0, "variant": None},
     ],
-    # MODIFIABLE: Ajoutez autant de vagues que vous le souhaitez.
-    # Exemple avec des variants (si vous implémentez cette logique dans la classe Enemy):
     # 6: [
     #     {"delay_start_group": 2.0, "enemy_id": 1, "count": 5, "interval": 1.0, "variant": {"hp_multiplier": 1.5, "color_tint": (200,100,100)}},
     #     {"delay_start_group": 3.0, "enemy_id": 3, "count": 1, "interval": 0.0, "variant": {"speed_multiplier": 0.7, "is_elite": True}},
@@ -133,7 +122,7 @@ def load_waves():
     return processed_waves
 
 
-# --- Fonctions pour des Vagues Générées Procéduralement (Optionnel) ---
+# --- Fonctions pour des Vagues Générées Procéduralement ---
 # def generate_procedural_wave(wave_number, difficulty_factor):
 #     """
 #     Génère une vague d'ennemis de manière procédurale.
@@ -158,15 +147,12 @@ if __name__ == '__main__':
     print("Test des définitions de vagues:")
 
 
-    # Simuler les ID d'ennemis si objects.py n'est pas directement importable ici sans Pygame
     class MockEnemyStats:
         ENEMY_ID_BASIC = 1
         ENEMY_ID_FAST = 2
         ENEMY_ID_TANK = 3
 
 
-    # Actualiser WAVE_DEFINITIONS_PRESET pour utiliser ces mocks si besoin pour le test standalone
-    # (ou s'assurer que les IDs numériques sont corrects)
 
     loaded_wave_data = load_waves()
     for wave_num, spawn_list in loaded_wave_data.items():

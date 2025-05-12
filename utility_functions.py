@@ -136,8 +136,6 @@ def load_sprite(path, use_alpha=True, specific_fallback_path=None):
 
     try:
         if not os.path.exists(full_path):
-            # Try to construct path relative to ASSET_PATH if simple path fails
-            # This is a common pattern if 'path' is just 'turrets/mortar_sketch.png'
             alt_full_path = os.path.join(cfg.ASSET_PATH, path)
             if os.path.exists(alt_full_path):
                 full_path = alt_full_path
